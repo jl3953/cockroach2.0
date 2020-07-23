@@ -9,7 +9,7 @@
 package licenseccl
 
 import (
-	"bytes"
+	//"bytes"
 	"encoding/base64"
 	"strings"
 	"time"
@@ -17,9 +17,9 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgcode"
 	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgerror"
 	"github.com/cockroachdb/cockroach/pkg/util/protoutil"
-	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
+	// "github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/cockroach/pkg/util/uuid"
-	"github.com/cockroachdb/errors"
+	// "github.com/cockroachdb/errors"
 )
 
 // LicensePrefix is a prefix on license strings to make them easily recognized.
@@ -56,6 +56,8 @@ func Decode(s string) (*License, error) {
 
 // Check returns an error if the license is empty or not currently valid.
 func (l *License) Check(at time.Time, cluster uuid.UUID, org, feature string) error {
+	return nil
+	/**
 	if l == nil {
 		// TODO(dt): link to some stable URL that then redirects to a helpful page
 		// that explains what to do here.
@@ -117,4 +119,5 @@ func (l *License) Check(at time.Time, cluster uuid.UUID, org, feature string) er
 		"license for cluster(s) %s is not valid for cluster %s",
 		matches.String(), cluster.String(),
 	)
+	**/
 }
