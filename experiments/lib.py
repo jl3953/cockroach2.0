@@ -170,9 +170,8 @@ def start_cluster(nodes):
 
 def build_cockroach(node, commit):
     cmd = ("ssh {0} 'export GOPATH=/usr/local/temp/go "
-           "&& cd {1} && git fetch origin {2} && git checkout {2} && git pull origin {2} && git submodule update --init"
-           "&& (make build || "
-           "(./bin/dep ensure && make clean && make build))'") \
+           "&& set -x && cd {1} && git fetch origin {2} && git checkout {2} && git pull origin {2} && git submodule update --init "
+           "&& (export PATH=$PATH:/usr/local/go/bin && echo $PATH && make clean && make build) && set +x'") \
            .format(node["ip"], COCKROACH_DIR, commit)
 
     return subprocess.Popen(shlex.split(cmd))
