@@ -13,20 +13,27 @@ package kv
 import (
 	"context"
 	"crypto/sha1"
+	"database/sql"
 	"encoding/binary"
 	"fmt"
 	"hash"
 	"math"
-	"math/rand"
+	// "math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
 
+	"github.com/cockroachdb/cockroach-go/crdb"
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/cockroach/pkg/workload"
 	"github.com/cockroachdb/cockroach/pkg/workload/histogram"
+	"github.com/cockroachdb/cockroach/pkg/workload/ycsb"
+	"github.com/jackc/pgx"
 	"github.com/cockroachdb/errors"
 	"github.com/spf13/pflag"
+
+	"golang.org/x/exp/rand"
 )
 
 const (
@@ -73,6 +80,9 @@ type kv struct {
 	secondaryIndex                       bool
 	shards                               int
 	targetCompressionRatio               float64
+	s				float64
+	zipfVerbose				bool
+	useOriginal				bool
 }
 
 func init() {
@@ -130,6 +140,9 @@ var kvMeta = workload.Meta{
 		g.flags.Float64Var(&g.targetCompressionRatio, `target-compression-ratio`, 1.0,
 			`Target compression ratio for data blocks. Must be >= 1.0`)
 		g.connFlags = workload.NewConnFlags(&g.flags)
+		g.flags.Float64Var(&g.s, `s`, 1.2, `s parameter in the zipfian generator, default 1.2`)
+		g.flags.BoolVar(&g.zipfVerbose, `zipfVerbose`, false, `whether zipfian generator is verbose`)
+		g.flags.BoolVar(&g.useOriginal, `useOriginal`, true, `whether or not to use original fake zipfian generator.`)
 		return g
 	},
 }
@@ -232,6 +245,16 @@ func (w *kv) Ops(urls []string, reg *histogram.Registry) (workload.QueryLoad, er
 	if err != nil {
 		return workload.QueryLoad{}, err
 	}
+
+	// open db connections
+	db, err := sql.Open(`cockroach`, strings.Join(urls, ` `))
+	if err != nil {
+		return workload.QueryLoad{}, err
+	}
+	db.SetMaxOpenConns(w.connFlags.Concurrency + 1)
+	db.SetMaxIdleConns(w.connFlags.Concurrency + 1)
+	// end opening of db connections
+
 	cfg := workload.MultiConnPoolCfg{
 		MaxTotalConnections: w.connFlags.Concurrency + 1,
 	}
@@ -290,6 +313,8 @@ func (w *kv) Ops(urls []string, reg *histogram.Registry) (workload.QueryLoad, er
 			config:          w,
 			hists:           reg.GetHandle(),
 			numEmptyResults: numEmptyResults,
+			db: db,
+			mcp: mcp,
 		}
 		op.readStmt = op.sr.Define(readStmtStr)
 		op.writeStmt = op.sr.Define(writeStmtStr)
@@ -300,7 +325,7 @@ func (w *kv) Ops(urls []string, reg *histogram.Registry) (workload.QueryLoad, er
 		if w.sequential {
 			op.g = newSequentialGenerator(seq)
 		} else if w.zipfian {
-			op.g = newZipfianGenerator(seq)
+			op.g = newZipfianGenerator(seq, w.s, w.zipfVerbose, w.useOriginal)
 		} else {
 			op.g = newHashGenerator(seq)
 		}
@@ -319,30 +344,71 @@ type kvOp struct {
 	spanStmt        workload.StmtHandle
 	g               keyGenerator
 	numEmptyResults *int64 // accessed atomically
+	db		*sql.DB
+	mcp		*workload.MultiConnPool
 }
+
+type byInt []int64
+
+func (s byInt) Len() int {
+	return len(s)
+}
+
+func (s byInt) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s byInt) Less (i, j int) bool {
+	return s[i] < s[j]
+}
+
 
 func (o *kvOp) run(ctx context.Context) error {
 	statementProbability := o.g.rand().Intn(100) // Determines what statement is executed.
+
 	if statementProbability < o.config.readPercent {
+		// jenndebug sort the keys first
+		argsInt := make([]int64, o.config.batchSize)
+		for i := 0; i < o.config.batchSize; i++ {
+			argsInt[i] = o.g.readKey()
+		}
+		sort.Sort(byInt(argsInt))
 		args := make([]interface{}, o.config.batchSize)
 		for i := 0; i < o.config.batchSize; i++ {
-			args[i] = o.g.readKey()
+			args[i] = argsInt[i]
 		}
+
 		start := timeutil.Now()
-		rows, err := o.readStmt.Query(ctx, args...)
+		tx, err := o.mcp.Get().BeginEx(ctx, &pgx.TxOptions{
+						IsoLevel: pgx.Serializable,
+						AccessMode: pgx.ReadOnly,})
+
+		// jenndebug rows, err := o.readStmt.Query(ctx, args...)
 		if err != nil {
 			return err
 		}
-		empty := true
-		for rows.Next() {
-			empty = false
-		}
-		if empty {
-			atomic.AddInt64(o.numEmptyResults, 1)
-		}
+		// wrapping the single read statemnt in a txn
+		err = crdb.ExecuteInTx(ctx, (*workload.PgxTx)(tx), func() error {
+			rows, err := o.readStmt.QueryTx(ctx, tx, args...)
+			if err != nil {
+				return err
+			}
+			empty := true
+			for rows.Next() {
+				empty = false
+			}
+			if empty {
+				atomic.AddInt64(o.numEmptyResults, 1)
+			}
+			if rowErr := rows.Err(); rowErr != nil {
+				return rowErr
+			}
+			rows.Close()
+			return nil
+		})
 		elapsed := timeutil.Since(start)
 		o.hists.Get(`read`).Record(elapsed)
-		return rows.Err()
+		return err
 	}
 	// Since we know the statement is not a read, we recalibrate
 	// statementProbability to only consider the other statements.
@@ -355,14 +421,29 @@ func (o *kvOp) run(ctx context.Context) error {
 		return err
 	}
 	const argCount = 2
+
+	// jenndebug sort the keys first
+	argsInt := make([]int64, o.config.batchSize)
+	for i := 0; i < o.config.batchSize; i++ {
+		argsInt[i] = o.g.writeKey()
+	}
+	sort.Sort(byInt(argsInt))
 	args := make([]interface{}, argCount*o.config.batchSize)
 	for i := 0; i < o.config.batchSize; i++ {
 		j := i * argCount
-		args[j+0] = o.g.writeKey()
+		args[j+0] = argsInt[i]
 		args[j+1] = randomBlock(o.config, o.g.rand())
-	}
+	} //jenndebug
+
+
+	tx, err := o.mcp.Get().BeginEx(ctx, &pgx.TxOptions{
+					IsoLevel: pgx.Serializable,
+					AccessMode: pgx.ReadWrite,})
 	start := timeutil.Now()
-	_, err := o.writeStmt.Exec(ctx, args...)
+	err = crdb.ExecuteInTx(ctx, (*workload.PgxTx)(tx), func() error {
+		_, err := o.writeStmt.ExecTx(ctx, tx, args...)
+		return err
+	})
 	elapsed := timeutil.Since(start)
 	o.hists.Get(`write`).Record(elapsed)
 	return err
@@ -418,7 +499,7 @@ type hashGenerator struct {
 func newHashGenerator(seq *sequence) *hashGenerator {
 	return &hashGenerator{
 		seq:    seq,
-		random: rand.New(rand.NewSource(timeutil.Now().UnixNano())),
+		random: rand.New(rand.NewSource(uint64(timeutil.Now().UnixNano()))),
 		hasher: sha1.New(),
 	}
 }
@@ -460,7 +541,7 @@ type sequentialGenerator struct {
 func newSequentialGenerator(seq *sequence) *sequentialGenerator {
 	return &sequentialGenerator{
 		seq:    seq,
-		random: rand.New(rand.NewSource(timeutil.Now().UnixNano())),
+		random: rand.New(rand.NewSource(uint64(timeutil.Now().UnixNano()))),
 	}
 }
 
@@ -484,27 +565,41 @@ func (g *sequentialGenerator) sequence() int64 {
 	return atomic.LoadInt64(&g.seq.val)
 }
 
+type zipfWrapper interface {
+	Uint64Jenn(*rand.Rand) uint64
+}
+
 type zipfGenerator struct {
 	seq    *sequence
 	random *rand.Rand
-	zipf   *zipf
+	zipf   zipfWrapper
 }
 
 // Creates a new zipfian generator.
-func newZipfianGenerator(seq *sequence) *zipfGenerator {
-	random := rand.New(rand.NewSource(timeutil.Now().UnixNano()))
+func newZipfianGenerator(seq *sequence, s float64, verbose bool, useOriginal bool,
+		) *zipfGenerator {
+	random := rand.New(rand.NewSource(uint64(timeutil.Now().UnixNano())))
+	max := uint64(1000000)
+	var hey zipfWrapper
+	if useOriginal {
+		hey = newZipf(s, 1, max)
+	} else {
+		hey, _ = ycsb.NewZipfGenerator(random, 0, max, s, verbose)
+		
+	}
 	return &zipfGenerator{
 		seq:    seq,
 		random: random,
-		zipf:   newZipf(1.1, 1, uint64(math.MaxInt64)),
+		zipf:   hey,
 	}
 }
 
 // Get a random number seeded by v that follows the
 // zipfian distribution.
 func (g *zipfGenerator) zipfian(seed int64) int64 {
-	randomWithSeed := rand.New(rand.NewSource(seed))
-	return int64(g.zipf.Uint64(randomWithSeed))
+	randomWithSeed := rand.New(rand.NewSource(uint64(seed)))
+
+	return int64(g.zipf.Uint64Jenn(randomWithSeed))
 }
 
 // Get a zipf write key appropriately.
