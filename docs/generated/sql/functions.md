@@ -1857,7 +1857,8 @@ Negative azimuth values and values greater than 2π (360 degrees) are supported.
 <p>For example, <code>translate('doggie', 'dog', '123');</code> returns <code>1233ie</code>.</p>
 </span></td></tr>
 <tr><td><a name="upper"></a><code>upper(val: <a href="string.html">string</a>) &rarr; <a href="string.html">string</a></code></td><td><span class="funcdesc"><p>Converts all characters in <code>val</code> to their to their upper-case equivalents.</p>
-</span></td></tr></tbody>
+</span></td></tr>
+<tr><td><a name="whois"></a><code>whois(<a href="string.html">string</a>...) &rarr; <a href="string.html">string</a></code></td><td></td></tr></tbody>
 </table>
 
 ### System info functions
