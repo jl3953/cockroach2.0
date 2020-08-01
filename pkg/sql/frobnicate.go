@@ -3,7 +3,7 @@ package sql
 import (
 	"context"
 	"log"
-	//"time"
+	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/errors"
@@ -28,11 +28,18 @@ func (p *planner) Frobnicate(ctx context.Context, stmt *tree.Frobnicate) (planNo
 	}
 	log.Printf("jenndebug connected to %v\n", address)
 	defer conn.Close()
-	_ = pb.NewGreeterClient(conn)
+	c := pb.NewGreeterClient(conn)
 
 	// Contact the server and print out its response.
-	/*name := defaultName
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)*/
+	name := defaultName
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	log.Printf("jenndebug send rpc to server\n")
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		log.Fatalf("jenndebug could not greet: %v", err)
+	}
+	log.Printf("jenndebug received server response: %s", r.GetMessage())
 
-	return nil, errors.AssertionFailedf("We're not quite frobnicating yet...")
+	return nil, errors.AssertionFailedf("Received server response: %s", r.GetMessage())
 }
