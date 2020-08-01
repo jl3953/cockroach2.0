@@ -9,7 +9,7 @@ import (
 	"github.com/cockroachdb/errors"
 
 	"google.golang.org/grpc"
-	//pb "google.golang.org/grpc/examples/helloworld"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 
 )
 
@@ -28,13 +28,11 @@ func (p *planner) Frobnicate(ctx context.Context, stmt *tree.Frobnicate) (planNo
 	}
 	log.Printf("jenndebug connected to %v\n", address)
 	defer conn.Close()
-	//c := pb.NewGreeterClient(conn)
+	_ = pb.NewGreeterClient(conn)
 
 	// Contact the server and print out its response.
-	/**
-	name := defaultName
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	**/
+	/*name := defaultName
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)*/
 
 	return nil, errors.AssertionFailedf("We're not quite frobnicating yet...")
 }
