@@ -99,6 +99,8 @@ func buildOpaque(
 		plan, err = p.DropView(ctx, n)
 	case *tree.DropSequence:
 		plan, err = p.DropSequence(ctx, n)
+	case *tree.Frobnicate:
+		plan, err = p.Frobnicate(ctx, n)
 	case *tree.Grant:
 		plan, err = p.Grant(ctx, n)
 	case *tree.GrantRole:
@@ -192,6 +194,7 @@ func init() {
 		&tree.DropView{},
 		&tree.DropRole{},
 		&tree.DropSequence{},
+		&tree.Frobnicate{},
 		&tree.Grant{},
 		&tree.GrantRole{},
 		&tree.RenameColumn{},
