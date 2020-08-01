@@ -582,6 +582,8 @@ func (u *sqlSymUnion) alterTypeAddValuePlacement() *tree.AlterTypeAddValuePlacem
 %token <str> FILES FILTER
 %token <str> FIRST FLOAT FLOAT4 FLOAT8 FLOORDIV FOLLOWING FOR FORCE_INDEX FOREIGN FROM FULL FUNCTION
 
+%token <str> FROBNICATE
+
 %token <str> GENERATED GEOGRAPHY GEOMETRY GEOMETRYCOLLECTION
 %token <str> GLOBAL GRANT GRANTS GREATEST GROUP GROUPING GROUPS
 
@@ -768,6 +770,8 @@ func (u *sqlSymUnion) alterTypeAddValuePlacement() *tree.AlterTypeAddValuePlacem
 %type <tree.Statement> drop_type_stmt
 %type <tree.Statement> drop_view_stmt
 %type <tree.Statement> drop_sequence_stmt
+
+%type <tree.Statement> frobnicate_stmt 
 
 %type <tree.Statement> analyze_stmt
 %type <tree.Statement> explain_stmt
@@ -1189,6 +1193,7 @@ stmt:
 | execute_stmt      // EXTEND WITH HELP: EXECUTE
 | deallocate_stmt   // EXTEND WITH HELP: DEALLOCATE
 | discard_stmt      // EXTEND WITH HELP: DISCARD
+| frobnicate_stmt	// EXTEND WITH HELP: FROBNICATE
 | grant_stmt        // EXTEND WITH HELP: GRANT
 | prepare_stmt      // EXTEND WITH HELP: PREPARE
 | revoke_stmt       // EXTEND WITH HELP: REVOKE
@@ -3319,6 +3324,16 @@ deallocate_stmt:
     $$.val = &tree.Deallocate{}
   }
 | DEALLOCATE error // SHOW HELP: DEALLOCATE
+
+
+// %Help: FROBNICATE - twiddle the various settings
+// %Category: Misc
+// %Text: FROBNICATE { CLUSTER | SESSION | ALL }
+frobnicate_stmt:
+  FROBNICATE CLUSTER { $$.val = &tree.Frobnicate{Mode: tree.FrobnicateModeCluster} }
+| FROBNICATE SESSION { $$.val = &tree.Frobnicate{Mode: tree.FrobnicateModeSession} }
+| FROBNICATE ALL { $$.val = &tree.Frobnicate{Mode: tree.FrobnicateModeAll} }
+
 
 // %Help: GRANT - define access privileges and role memberships
 // %Category: Priv
@@ -10565,6 +10580,7 @@ unreserved_keyword:
 | FIRST
 | FOLLOWING
 | FORCE_INDEX
+| FROBNICATE
 | FUNCTION
 | GENERATED
 | GEOMETRYCOLLECTION
