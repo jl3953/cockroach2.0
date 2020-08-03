@@ -358,8 +358,11 @@ def copy_to_permanent_storage(overall_dir):
 		None.
 	"""
 
+	"""
 	copy_executable = os.path.join(overall_dir, "copyall.sh")
 	lib.call("{0}".format(copy_executable), "could not copy to permanent storage {}".format(overall_dir))
+	"""
+	return "unimplemented"
 
 
 def main():
