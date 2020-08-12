@@ -325,6 +325,35 @@ func stripHotkeys(bindCmd BindStmt, isRead bool) ([][]byte, [][]byte, bool) {
 	}
 }
 
+func extendWarmArgsRead(warmArgs [][]byte, byHowMuch int) [][]byte {
+	lastKey := warmArgs[len(warmArgs)-1]
+
+	for i := 0; i < byHowMuch; i++ {
+		warmArgs = append(warmArgs, lastKey)
+	}
+
+	return warmArgs
+}
+
+func extendWarmArgsWrite(warmArgs [][]byte, byHowMuch int) [][]byte {
+	lastKey := warmArgs[len(warmArgs)-2]
+	lastVal := warmArgs[len(warmArgs)-1]
+
+	for i := 0; i < byHowMuch; i += 2 {
+		warmArgs = append(warmArgs, lastKey, lastVal)
+	}
+
+	return warmArgs
+}
+
+func extendWarmArgs(warmArgs [][]byte, byHowMuch int, isRead bool) [][]byte {
+	if isRead {
+		return extendWarmArgsRead(warmArgs, byHowMuch)
+	} else {
+		return extendWarmArgsWrite(warmArgs, byHowMuch)
+	}
+}
+
 func (ex *connExecutor) execBind(
 	ctx context.Context, bindCmd BindStmt,
 ) (fsm.Event, fsm.EventPayload) {
@@ -355,8 +384,11 @@ func (ex *connExecutor) execBind(
 	}
 
 	if hotkeys, warmArgs, hasWarmKeys := stripHotkeys(bindCmd, false); hasWarmKeys {
-		// bindCmd.Args = warmArgs
-		log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v]", hotkeys, warmArgs)
+		extendedWarmArgs := extendWarmArgs(warmArgs, len(hotkeys), false)
+		log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
+		bindCmd.Args = extendedWarmArgs
+	} else {
+		log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys, warmArgs)
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
