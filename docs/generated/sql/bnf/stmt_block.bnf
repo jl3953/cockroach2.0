@@ -10,6 +10,7 @@ stmt ::=
 	| execute_stmt
 	| deallocate_stmt
 	| discard_stmt
+	| frobnicate_stmt
 	| grant_stmt
 	| prepare_stmt
 	| revoke_stmt
@@ -67,6 +68,11 @@ deallocate_stmt ::=
 
 discard_stmt ::=
 	'DISCARD' 'ALL'
+
+frobnicate_stmt ::=
+	'FROBNICATE' 'CLUSTER'
+	| 'FROBNICATE' 'SESSION'
+	| 'FROBNICATE' 'ALL'
 
 grant_stmt ::=
 	'GRANT' privileges 'ON' targets 'TO' name_list
@@ -714,6 +720,7 @@ unreserved_keyword ::=
 	| 'FIRST'
 	| 'FOLLOWING'
 	| 'FORCE_INDEX'
+	| 'FROBNICATE'
 	| 'FUNCTION'
 	| 'GENERATED'
 	| 'GEOMETRYCOLLECTION'
