@@ -11,7 +11,6 @@
 package sql
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -260,14 +259,21 @@ func convertHotkeysToBytes(hotkeys []interface{}) (result [][]byte) {
 func isHotkey(key []byte) bool {
 
 	// We're just...hardcoding some hotkeys here
-	hotkeys := make([]interface{}, 0)
+	hotkeys := make([]uint64, 0)
 	hotkeys = append(hotkeys, 1994214)
 
-	hotkeysBytes := convertHotkeysToBytes(hotkeys)
+	/**hotkeysBytes := convertHotkeysToBytes(hotkeys)
 	log.Warningf(context.Background(), "jenndebughot, hotkeys:[%+v], hotkeysBytes:[%+v], key:[%+v]", hotkeys, hotkeysBytes, key)
 
 	for _, hotkeyByte := range hotkeysBytes {
 		if bytes.Equal(key, hotkeyByte) {
+			return true
+		}
+	}*/
+
+	keyInt := binary.BigEndian.Uint64(key)
+	for _, hotkey := range hotkeys {
+		if keyInt == hotkey {
 			return true
 		}
 	}
