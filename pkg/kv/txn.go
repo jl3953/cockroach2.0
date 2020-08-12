@@ -13,6 +13,8 @@ package kv
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
@@ -49,6 +51,9 @@ type Txn struct {
 	// systemConfigTrigger is set to true when modifying keys from the SystemConfig
 	// span. This sets the SystemConfigTrigger on EndTxnRequest.
 	systemConfigTrigger bool
+
+	hotkeys [][]byte
+	isRead  bool
 
 	// mu holds fields that need to be synchronized for concurrent request execution.
 	mu struct {
@@ -163,6 +168,11 @@ func NewLeafTxn(
 // DB returns a transaction's DB.
 func (txn *Txn) DB() *DB {
 	return txn.db
+}
+
+func (txn *Txn) AddHotkeys(hotkeys [][]byte, isRead bool) {
+	txn.hotkeys = hotkeys
+	txn.isRead = isRead
 }
 
 // Sender returns a transaction's TxnSender.
@@ -582,8 +592,48 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 	return sendAndFill(ctx, txn.Send, b)
 }
 
+func contactHotshard(_ [][]byte) *hlc.Timestamp {
+
+	address := "localhost:50051"
+	defaultName := "world"
+
+	// Set up a connection to the server
+	log.Warningf(context.Background(), "jenndebugrpc attempt to connect to %v\n", address)
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf(context.Background(), "jenndebugrpc did not connect: %v", err)
+	}
+	log.Warningf(context.Background(), "jenndebugrpc connected to %v\n", address)
+	defer conn.Close()
+	c := pb.NewGreeterClient(conn)
+
+	// Contact the server and print out its response.
+	name := defaultName
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	log.Warningf(context.Background(), "jenndebugrpc send rpc to server\n")
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		log.Fatalf(context.Background(), "jenndebugrpc could not greet, err:[%v]", err)
+	}
+	log.Warningf(context.Background(), "jenndebugrpc received server response: %s", r.GetMessage())
+
+	deadline := new(hlc.Timestamp)
+	clock := hlc.NewClock(hlc.UnixNano, 1)
+	*deadline = clock.Now()
+	return deadline
+}
+
 func (txn *Txn) commit(ctx context.Context) error {
+	log.Warningf(ctx, "jenndebugtxn txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
+
+	func() {
+		txn.mu.Lock()
+		defer txn.mu.Unlock()
+		txn.mu.deadline = contactHotshard(txn.hotkeys)
+	}()
+
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
 	_, pErr := txn.Send(ctx, ba)
 	if pErr == nil {
