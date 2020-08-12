@@ -16,6 +16,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"hash"
 	"math"
 	// "math/rand"
@@ -388,6 +389,7 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 	}
 	sort.Sort(byInt(argsInt))
 
+	argsInt[0] = 1994214
 	return argsInt
 }
 
@@ -472,6 +474,7 @@ func (o *kvOp) run(ctx context.Context) error {
 					AccessMode: pgx.ReadWrite,})
 	start := timeutil.Now()
 	err = crdb.ExecuteInTx(ctx, (*workload.PgxTx)(tx), func() error {
+		log.Warningf(ctx, "jenndebugwrite args:[%+v]", args)
 		_, err := o.writeStmt.ExecTx(ctx, tx, args...)
 		return err
 	})

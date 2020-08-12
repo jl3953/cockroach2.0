@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"runtime/debug"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -318,6 +319,7 @@ Loop:
 		var typ pgwirebase.ClientMessageType
 		var n int
 		typ, n, err = c.readBuf.ReadTypedMsg(&c.rd)
+		log.Warningf(ctx, "jenndebug, typ:[%s]", typ)
 		c.metrics.BytesInCount.Inc(int64(n))
 		if err != nil {
 			break Loop
@@ -376,6 +378,7 @@ Loop:
 
 		case pgwirebase.ClientMsgParse:
 			err = c.handleParse(ctx, &c.readBuf, intSizer.GetUnqualifiedIntSize())
+			debug.PrintStack()
 
 		case pgwirebase.ClientMsgDescribe:
 			err = c.handleDescribe(ctx, &c.readBuf)
@@ -803,6 +806,8 @@ func (c *conn) handleParse(
 		return c.stmtBuf.Push(ctx, sql.SendError{Err: fmt.Errorf("CopyFrom not supported in extended protocol mode")})
 	}
 
+	log.Warningf(ctx, "jenndebug, name:[%s], query:[%s]", name, query)
+
 	return c.stmtBuf.Push(
 		ctx,
 		sql.PrepareStmt{
@@ -826,6 +831,7 @@ func (c *conn) handleDescribe(ctx context.Context, buf *pgwirebase.ReadBuffer) e
 	if err != nil {
 		return c.stmtBuf.Push(ctx, sql.SendError{Err: err})
 	}
+	log.Warningf(ctx, "jenndebug, typ:[%s], name:[%s]", typ, name)
 	return c.stmtBuf.Push(
 		ctx,
 		sql.DescribeStmt{
@@ -931,6 +937,7 @@ func (c *conn) handleBind(ctx context.Context, buf *pgwirebase.ReadBuffer) error
 		}
 		qargs[i] = b
 	}
+	log.Warningf(ctx, "jenndebug, portalName:[%s], statementName:[%s], qargs[%+v]", portalName, statementName, qargs)
 
 	// From the docs on number of result-column format codes to bind:
 	// This can be zero to indicate that there are no result columns or that
@@ -971,6 +978,9 @@ func (c *conn) handleBind(ctx context.Context, buf *pgwirebase.ReadBuffer) error
 			columnFormatCodes[i] = pgwirebase.FormatCode(ch)
 		}
 	}
+
+	log.Warningf(ctx, "jenndebugargs, len(qargs):[%d], qargs:[%+v]", len(qargs), qargs)
+	//JENNDEBUGMARK 
 	return c.stmtBuf.Push(
 		ctx,
 		sql.BindStmt{
@@ -995,6 +1005,7 @@ func (c *conn) handleExecute(
 	if err != nil {
 		return c.stmtBuf.Push(ctx, sql.SendError{Err: err})
 	}
+	log.Warningf(ctx, "jenndebug, portalName:[%s]", portalName)
 	return c.stmtBuf.Push(ctx, sql.ExecPortal{
 		Name:         portalName,
 		TimeReceived: timeReceived,
