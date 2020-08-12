@@ -11,8 +11,8 @@
 package sql
 
 import (
-	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/cockroachdb/cockroach/pkg/kv"
@@ -253,15 +253,8 @@ func isHotkey(key []byte) bool {
 
 	if hotkeysInterface, err := pgx.ConvertDriverValuers(hotkeys); err == nil {
 		for _, hotkeyInterface := range hotkeysInterface {
-			log.Warningf(context.Background(), "jenndebughot hotkeysInterface:[%+v], hotkeyInterface:[%+v]", hotkeysInterface, hotkeyInterface)
-			hotkey, _ := hotkeyInterface.([]byte)
-			log.Warningf(context.Background(), "jenndebughot idunnit hotkey:[%+v]", hotkey)
-			/**if !err {
-				log.Fatalf(context.Background(), "jenndebug youdunnit isHotKey failed on key:[%+v], hotkeyInterface:[%+v]", key, hotkeyInterface)
-			}**/
-			if bytes.Equal(key, hotkey) {
-				return true
-			}
+			endian := binary.BigEndian.Uint64(key)
+			log.Warningf(context.Background(), "jenndebugargs endian:[%+v], hotkeyInterface:[%+v]", endian, hotkeyInterface)
 		}
 		return false
 	} else {
