@@ -249,7 +249,7 @@ func (ex *connExecutor) populatePrepared(
 
 func isHotkey(key []byte) bool {
 	hotkeys := make([]interface{}, 0)
-	hotkeys = append(hotkeys, 1994214)
+	hotkeys = append(hotkeys, int64(1994214))
 
 	if hotkeysInterface, err := pgx.ConvertDriverValuers(hotkeys); err == nil {
 		for _, hotkeyInterface := range hotkeysInterface {
