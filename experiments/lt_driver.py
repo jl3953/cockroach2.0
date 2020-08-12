@@ -17,6 +17,15 @@ def parse_config_file(baseline_file, lt_file):
 	return exp, variation_config
 
 
+def last_adjustments(max_concurrency):
+
+	""" Returns:
+	Final stage tinkering with the concurrency.
+	"""
+
+	return max_concurrency - 1
+
+
 def find_optimal_concurrency(exp, variations, skew, is_view_only):
 
 	""" Returns:
@@ -56,6 +65,7 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
 		step_size = int(step_size / 2)
 
 	
+	max_concurrency = last_adjustments(max_concurrency)
 	return max_concurrency, data
 
 
