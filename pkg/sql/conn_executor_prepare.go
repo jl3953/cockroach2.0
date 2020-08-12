@@ -11,6 +11,7 @@
 package sql
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -25,7 +26,6 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/errors"
-	"github.com/jackc/pgx"
 	"github.com/lib/pq/oid"
 )
 
@@ -247,20 +247,32 @@ func (ex *connExecutor) populatePrepared(
 	return flags, nil
 }
 
-func isHotkey(key []byte) bool {
-	hotkeys := make([]interface{}, 0)
-	hotkeys = append(hotkeys, int64(1994214))
+func convertHotkeysToBytes(hotkeys []interface{}) (result [][]byte) {
 
-	if hotkeysInterface, err := pgx.ConvertDriverValuers(hotkeys); err == nil {
-		for _, hotkeyInterface := range hotkeysInterface {
-			endian := binary.BigEndian.Uint64(key)
-			log.Warningf(context.Background(), "jenndebugargs endian:[%+v], hotkeyInterface:[%+v]", endian, hotkeyInterface)
-		}
-		return false
-	} else {
-		log.Fatalf(context.Background(), "jenndebughot isHotKey failed on key[%+v]", key)
-		return false // this should never execute
+	result = make([][]byte, len(hotkeys))
+	for i, hotkey := range hotkeys {
+		binary.BigEndian.PutUint64(result[i], hotkey.(uint64))
 	}
+
+	return result
+}
+
+func isHotkey(key []byte) bool {
+
+	// We're just...hardcoding some hotkeys here
+	hotkeys := make([]interface{}, 0)
+	hotkeys = append(hotkeys, 1994214)
+
+	hotkeysBytes := convertHotkeysToBytes(hotkeys)
+	log.Warningf(context.Background(), "jenndebughot, hotkeys:[%+v], hotkeysBytes:[%+v], key:[%+v]", hotkeys, hotkeysBytes, key)
+
+	for _, hotkeyByte := range hotkeysBytes {
+		if bytes.Equal(key, hotkeyByte) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func stripHotkeysRead(bindCmd BindStmt) (hotkeys [][]byte, warmArgs [][]byte, hasWarmKeys bool) {
