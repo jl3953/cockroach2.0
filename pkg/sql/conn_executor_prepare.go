@@ -253,8 +253,9 @@ func isHotkey(key []byte) bool {
 
 	if hotkeysInterface, err := pgx.ConvertDriverValuers(hotkeys); err == nil {
 		for _, hotkeyInterface := range hotkeysInterface {
+			log.Warningf(context.Background(), "jenndebughot hotkeysInterface:[%+v], hotkeyInterface:[%+v]", hotkeysInterface, hotkeyInterface)
 			hotkey, _ := hotkeyInterface.([]byte)
-			log.Warningf(context.Background(), "jenndebug idunnit hotkey:[%+v]", hotkey)
+			log.Warningf(context.Background(), "jenndebughot idunnit hotkey:[%+v]", hotkey)
 			/**if !err {
 				log.Fatalf(context.Background(), "jenndebug youdunnit isHotKey failed on key:[%+v], hotkeyInterface:[%+v]", key, hotkeyInterface)
 			}**/
@@ -264,7 +265,7 @@ func isHotkey(key []byte) bool {
 		}
 		return false
 	} else {
-		log.Fatalf(context.Background(), "jenndebug isHotKey failed on key[%+v]", key)
+		log.Fatalf(context.Background(), "jenndebughot isHotKey failed on key[%+v]", key)
 		return false // this should never execute
 	}
 }
