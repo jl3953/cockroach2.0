@@ -273,6 +273,7 @@ func isHotkey(key []byte) bool {
 
 	keyInt := binary.BigEndian.Uint64(key)
 	for _, hotkey := range hotkeys {
+		log.Warningf(context.Background(), "jenndebughot keyInt:[%+v], hotkey:[%+v]", keyInt, hotkey)
 		if keyInt == hotkey {
 			return true
 		}
