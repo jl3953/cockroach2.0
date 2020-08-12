@@ -25,8 +25,8 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/errors"
-	"github.com/lib/pq/oid"
 	"github.com/jackc/pgx"
+	"github.com/lib/pq/oid"
 )
 
 func (ex *connExecutor) execPrepare(
@@ -253,10 +253,11 @@ func isHotkey(key []byte) bool {
 
 	if hotkeysInterface, err := pgx.ConvertDriverValuers(hotkeys); err == nil {
 		for _, hotkeyInterface := range hotkeysInterface {
-			hotkey, err := hotkeyInterface.([]byte)
-			if !err {
-				log.Fatalf(context.Background(), "jenndebug youdunnit isHotKey failed on key[%+v]", key)
-			}
+			hotkey, _ := hotkeyInterface.([]byte)
+			log.Warningf(context.Background(), "jenndebug idunnit hotkey:[%+v]", hotkey)
+			/**if !err {
+				log.Fatalf(context.Background(), "jenndebug youdunnit isHotKey failed on key:[%+v], hotkeyInterface:[%+v]", key, hotkeyInterface)
+			}**/
 			if bytes.Equal(key, hotkey) {
 				return true
 			}
