@@ -11,6 +11,7 @@
 package sql
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
+	"github.com/jackc/pgx"
 )
 
 func (ex *connExecutor) execPrepare(
@@ -245,9 +247,75 @@ func (ex *connExecutor) populatePrepared(
 	return flags, nil
 }
 
+func isHotkey(key []byte) bool {
+	hotkeys := make([]interface{}, 0)
+	hotkeys = append(hotkeys, 1994214)
+
+	if hotkeysInterface, err := pgx.ConvertDriverValuers(hotkeys); err == nil {
+		for _, hotkeyInterface := range hotkeysInterface {
+			hotkey, err := hotkeyInterface.([]byte)
+			if !err {
+				log.Fatalf(context.Background(), "jenndebug youdunnit isHotKey failed on key[%+v]", key)
+			}
+			if bytes.Equal(key, hotkey) {
+				return true
+			}
+		}
+		return false
+	} else {
+		log.Fatalf(context.Background(), "jenndebug isHotKey failed on key[%+v]", key)
+		return false // this should never execute
+	}
+}
+
+func stripHotkeysRead(bindCmd BindStmt) (hotkeys [][]byte, warmArgs [][]byte, hasWarmKeys bool) {
+
+	for _, key := range bindCmd.Args {
+		if isHotkey(key) {
+			hotkeys = append(hotkeys, key)
+		} else {
+			warmArgs = append(warmArgs, key)
+		}
+	}
+
+	hasWarmKeys = len(warmArgs) > 0
+
+	return hotkeys, warmArgs, hasWarmKeys
+}
+
+func stripHotkeysWrite(bindCmd BindStmt) (hotkeys [][]byte, warmArgs [][]byte, hasWarmKeys bool) {
+
+	var key, val []byte
+	for i := 0; i < len(bindCmd.Args); i += 2 {
+
+		key = bindCmd.Args[i]
+		val = bindCmd.Args[i+1]
+
+		if isHotkey(key) {
+			hotkeys = append(hotkeys, key, val)
+		} else {
+			warmArgs = append(warmArgs, key, val)
+		}
+	}
+
+	hasWarmKeys = len(warmArgs) > 0
+
+	return hotkeys, warmArgs, hasWarmKeys
+}
+
+func stripHotkeys(bindCmd BindStmt, isRead bool) ([][]byte, [][]byte, bool) {
+	if isRead {
+		return stripHotkeysRead(bindCmd)
+	} else {
+		return stripHotkeysWrite(bindCmd)
+	}
+}
+
 func (ex *connExecutor) execBind(
 	ctx context.Context, bindCmd BindStmt,
 ) (fsm.Event, fsm.EventPayload) {
+
+	// JENNDEBUGMARK
 
 	retErr := func(err error) (fsm.Event, fsm.EventPayload) {
 		return eventNonRetriableErr{IsCommit: fsm.False}, eventNonRetriableErrPayload{err: err}
@@ -270,6 +338,11 @@ func (ex *connExecutor) execBind(
 		return retErr(pgerror.Newf(
 			pgcode.InvalidSQLStatementName,
 			"unknown prepared statement %q", bindCmd.PreparedStatementName))
+	}
+
+	if hotkeys, warmArgs, hasWarmKeys := stripHotkeys(bindCmd, false); hasWarmKeys {
+		// bindCmd.Args = warmArgs
+		log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v]", hotkeys, warmArgs)
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
