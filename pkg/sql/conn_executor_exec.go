@@ -103,10 +103,12 @@ func (ex *connExecutor) execStmt(
 				"stmt.tag", stmt.AST.StatementTag(),
 				"stmt.anonymized", stmt.AnonymizedStr,
 			)
+			log.Warningf(ctx, "jenndebugtxn stateOpen if")
 			pprof.Do(ctx, labels, func(ctx context.Context) {
 				ev, payload, err = ex.execStmtInOpenState(ctx, stmt, res, pinfo)
 			})
 		} else {
+			log.Warningf(ctx, "jenndebugtxn stateOpen else")
 			ev, payload, err = ex.execStmtInOpenState(ctx, stmt, res, pinfo)
 		}
 		switch ev.(type) {
