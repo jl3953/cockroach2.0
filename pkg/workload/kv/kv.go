@@ -16,7 +16,6 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
-	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"hash"
 	"math"
 	// "math/rand"
@@ -31,8 +30,8 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/workload"
 	"github.com/cockroachdb/cockroach/pkg/workload/histogram"
 	"github.com/cockroachdb/cockroach/pkg/workload/ycsb"
-	"github.com/jackc/pgx"
 	"github.com/cockroachdb/errors"
+	"github.com/jackc/pgx"
 	"github.com/spf13/pflag"
 
 	"golang.org/x/exp/rand"
@@ -82,11 +81,11 @@ type kv struct {
 	secondaryIndex                       bool
 	shards                               int
 	targetCompressionRatio               float64
-	s				float64
-	zipfVerbose				bool
-	useOriginal				bool
-	hotkey					int64
-	keyspace				int64
+	s                                    float64
+	zipfVerbose                          bool
+	useOriginal                          bool
+	hotkey                               int64
+	keyspace                             int64
 }
 
 func init() {
@@ -319,8 +318,8 @@ func (w *kv) Ops(urls []string, reg *histogram.Registry) (workload.QueryLoad, er
 			config:          w,
 			hists:           reg.GetHandle(),
 			numEmptyResults: numEmptyResults,
-			db: db,
-			mcp: mcp,
+			db:              db,
+			mcp:             mcp,
 		}
 		op.readStmt = op.sr.Define(readStmtStr)
 		op.writeStmt = op.sr.Define(writeStmtStr)
@@ -350,8 +349,8 @@ type kvOp struct {
 	spanStmt        workload.StmtHandle
 	g               keyGenerator
 	numEmptyResults *int64 // accessed atomically
-	db		*sql.DB
-	mcp		*workload.MultiConnPool
+	db              *sql.DB
+	mcp             *workload.MultiConnPool
 }
 
 type byInt []int64
@@ -364,7 +363,7 @@ func (s byInt) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-func (s byInt) Less (i, j int) bool {
+func (s byInt) Less(i, j int) bool {
 	return s[i] < s[j]
 	// reverse jenndebug
 	// return s[i] > s[j]
@@ -400,7 +399,7 @@ func (o *kvOp) run(ctx context.Context) error {
 
 		argsInt := correctTxnParams(o.config.batchSize, o.g.readKey, o.config.hotkey)
 
-		if argsInt[0] <= o.config.hotkey { //jenndebug hot 
+		if argsInt[0] <= o.config.hotkey { //jenndebug hot
 			o.hists.Get(`read`).Record(0 * time.Millisecond)
 			return nil
 		}
@@ -412,8 +411,8 @@ func (o *kvOp) run(ctx context.Context) error {
 
 		start := timeutil.Now()
 		tx, err := o.mcp.Get().BeginEx(ctx, &pgx.TxOptions{
-						IsoLevel: pgx.Serializable,
-						AccessMode: pgx.ReadOnly,})
+			IsoLevel:   pgx.Serializable,
+			AccessMode: pgx.ReadOnly})
 
 		// jenndebug rows, err := o.readStmt.Query(ctx, args...)
 		if err != nil {
@@ -454,7 +453,7 @@ func (o *kvOp) run(ctx context.Context) error {
 	}
 	const argCount = 2
 
-	argsInt := correctTxnParams(o.config.batchSize, o.g.writeKey, o.config.hotkey) 
+	argsInt := correctTxnParams(o.config.batchSize, o.g.writeKey, o.config.hotkey)
 
 	if argsInt[0] <= o.config.hotkey { //jenndebug hot
 		o.hists.Get(`write`).Record(0 * time.Millisecond)
@@ -468,13 +467,11 @@ func (o *kvOp) run(ctx context.Context) error {
 		args[j+1] = randomBlock(o.config, o.g.rand())
 	} //jenndebug
 
-
 	tx, err := o.mcp.Get().BeginEx(ctx, &pgx.TxOptions{
-					IsoLevel: pgx.Serializable,
-					AccessMode: pgx.ReadWrite,})
+		IsoLevel:   pgx.Serializable,
+		AccessMode: pgx.ReadWrite})
 	start := timeutil.Now()
 	err = crdb.ExecuteInTx(ctx, (*workload.PgxTx)(tx), func() error {
-		log.Warningf(ctx, "jenndebugwrite args:[%+v]", args)
 		_, err := o.writeStmt.ExecTx(ctx, tx, args...)
 		return err
 	})
@@ -611,7 +608,7 @@ type zipfGenerator struct {
 
 // Creates a new zipfian generator.
 func newZipfianGenerator(seq *sequence, s float64, verbose bool, useOriginal bool,
-		keyspace int64) *zipfGenerator {
+	keyspace int64) *zipfGenerator {
 	random := rand.New(rand.NewSource(uint64(timeutil.Now().UnixNano())))
 	max := uint64(keyspace)
 	var hey zipfWrapper
@@ -619,7 +616,7 @@ func newZipfianGenerator(seq *sequence, s float64, verbose bool, useOriginal boo
 		hey = newZipf(s, 1, max)
 	} else {
 		hey, _ = ycsb.NewZipfGenerator(random, 0, max, s, verbose)
-		
+
 	}
 	return &zipfGenerator{
 		seq:    seq,

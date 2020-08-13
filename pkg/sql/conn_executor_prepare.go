@@ -357,8 +357,6 @@ func (ex *connExecutor) execBind(
 	ctx context.Context, bindCmd BindStmt,
 ) (fsm.Event, fsm.EventPayload) {
 
-	// JENNDEBUGMARK
-
 	retErr := func(err error) (fsm.Event, fsm.EventPayload) {
 		return eventNonRetriableErr{IsCommit: fsm.False}, eventNonRetriableErrPayload{err: err}
 	}
@@ -382,13 +380,16 @@ func (ex *connExecutor) execBind(
 			"unknown prepared statement %q", bindCmd.PreparedStatementName))
 	}
 
-	if hotkeys, warmArgs, hasWarmKeys := stripHotkeys(bindCmd, false); hasWarmKeys {
-		extendedWarmArgs := extendWarmArgs(warmArgs, len(hotkeys), false)
-		log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
-		bindCmd.Args = extendedWarmArgs
-	} else {
-		log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys)
-		if bindCmd.PreparedStatementName == "kv-2" {
+	// JENNDEBUGMARK
+	log.Warningf(ctx, "jenndebugtxn, ctx:[%+v]", ctx)
+
+	if bindCmd.PreparedStatementName == "kv-2" {
+		if hotkeys, warmArgs, hasWarmKeys := stripHotkeys(bindCmd, false); hasWarmKeys {
+			extendedWarmArgs := extendWarmArgs(warmArgs, len(hotkeys), false)
+			log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
+			bindCmd.Args = extendedWarmArgs
+		} else {
+			log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys)
 			ps.AST = nil
 		}
 	}

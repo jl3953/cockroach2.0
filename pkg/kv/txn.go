@@ -13,7 +13,6 @@ package kv
 import (
 	"context"
 	"fmt"
-	"runtime/debug"
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
@@ -585,8 +584,6 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 
 func (txn *Txn) commit(ctx context.Context) error {
 	log.Warningf(ctx, "jenndebugtxn txn:[%+v], ctx:[%+v]", txn, ctx)
-	log.DumpStacks(ctx)
-	debug.PrintStack()
 	var ba roachpb.BatchRequest
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
 	_, pErr := txn.Send(ctx, ba)
