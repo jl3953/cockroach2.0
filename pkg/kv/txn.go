@@ -14,6 +14,7 @@ import (
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
@@ -591,14 +592,18 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 	return sendAndFill(ctx, txn.Send, b)
 }
 
-func contactHotshard(hotkeys [][]byte) *hlc.Timestamp {
+func contactHotshard(_ [][]byte) *hlc.Timestamp {
+
+	address := "localhost:50051"
+	defaultName := "world"
+
 	// Set up a connection to the server
-	log.Printf("jenndebug attempt to connect to %v\n", address)
+	log.Warningf(context.Background(), "jenndebugrpc attempt to connect to %v\n", address)
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		log.Fatalf("jenndebug did not connect: %v", err)
+		log.Fatalf(context.Background(), "jenndebugrpc did not connect: %v", err)
 	}
-	log.Printf("jenndebug connected to %v\n", address)
+	log.Warningf(context.Background(), "jenndebugrpc connected to %v\n", address)
 	defer conn.Close()
 	c := pb.NewGreeterClient(conn)
 
@@ -606,17 +611,28 @@ func contactHotshard(hotkeys [][]byte) *hlc.Timestamp {
 	name := defaultName
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	log.Printf("jenndebug send rpc to server\n")
+	log.Warningf(context.Background(), "jenndebugrpc send rpc to server\n")
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
-		log.Fatalf("jenndebug could not greet: %v", err)
+		log.Fatalf(context.Background(), "jenndebugrpc could not greet, err:[%v]", err)
 	}
-	log.Printf("jenndebug received server response: %s", r.GetMessage())
+	log.Warningf(context.Background(), "jenndebugrpc received server response: %s", r.GetMessage())
+
+	deadline := new(hlc.Timestamp)
+	clock := hlc.NewClock(hlc.UnixNano, 1)
+	*deadline = clock.Now()
+	return deadline
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
 	log.Warningf(ctx, "jenndebugtxn txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
+
+	func () {
+		txn.mu.Lock()
+		defer txn.mu.Unlock()
+		txn.mu.deadline = contactHotshard(txn.hotkeys)
+	}()
 
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
 	_, pErr := txn.Send(ctx, ba)
