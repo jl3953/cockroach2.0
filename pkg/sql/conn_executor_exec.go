@@ -434,6 +434,7 @@ func (ex *connExecutor) execStmtInOpenState(
 	// For regular statements (the ones that get to this point), we
 	// don't return any event unless an error happens.
 
+	log.Warningf(ctx, "jenndebugmadeit")
 	if os.ImplicitTxn.Get() {
 		asOfTs, err := p.isAsOf(ctx, stmt.AST)
 		if err != nil {
@@ -516,6 +517,7 @@ func (ex *connExecutor) execStmtInOpenState(
 		return makeErrEvent(err)
 	}
 
+	log.Warningf(ctx, "jenndebugmadeit")
 	if err := p.semaCtx.Placeholders.Assign(pinfo, stmt.NumPlaceholders); err != nil {
 		return makeErrEvent(err)
 	}
@@ -524,6 +526,7 @@ func (ex *connExecutor) execStmtInOpenState(
 	p.stmt = &stmt
 	p.cancelChecker = sqlbase.NewCancelChecker(ctx)
 	p.autoCommit = os.ImplicitTxn.Get() && !ex.server.cfg.TestingKnobs.DisableAutoCommit
+	log.Warningf(ctx, "jenndebugmadeit")
 	if err := ex.dispatchToExecutionEngine(ctx, p, res); err != nil {
 		return nil, nil, err
 	}
@@ -533,6 +536,7 @@ func (ex *connExecutor) execStmtInOpenState(
 
 	txn := ex.state.mu.txn
 
+	log.Warningf(ctx, "jenndebugmadeit")
 	if !os.ImplicitTxn.Get() && txn.IsSerializablePushAndRefreshNotPossible() {
 		rc, canAutoRetry := ex.getRewindTxnCapability()
 		if canAutoRetry {
