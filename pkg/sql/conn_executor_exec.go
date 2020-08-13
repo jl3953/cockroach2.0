@@ -320,6 +320,7 @@ func (ex *connExecutor) execStmtInOpenState(
 		return makeErrEvent(errTransactionInProgress)
 
 	case *tree.CommitTransaction:
+		// JENNDEBUGMARK
 		// CommitTransaction is executed fully here; there's no plan for it.
 		ev, payload := ex.commitSQLTransaction(ctx, stmt.AST)
 		return ev, payload, nil
@@ -744,12 +745,14 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	defer planner.curPlan.close(ctx)
 
 	if planner.autoCommit {
+		// JENNDEBUGMARK
 		planner.curPlan.flags.Set(planFlagImplicitTxn)
 	}
 
 	// Certain statements want their results to go to the client
 	// directly. Configure this here.
 	if planner.curPlan.avoidBuffering {
+		// JENNDEBUGMARK
 		res.DisableBuffering()
 	}
 

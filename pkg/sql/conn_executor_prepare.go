@@ -384,7 +384,9 @@ func (ex *connExecutor) execBind(
 	log.Warningf(ctx, "jenndebugtxn, ctx:[%+v]", ctx)
 
 	if bindCmd.PreparedStatementName == "kv-2" {
-		if hotkeys, warmArgs, hasWarmKeys := stripHotkeys(bindCmd, false); hasWarmKeys {
+		var hotkeys, warmArgs [][]byte
+		var hasWarmKeys bool
+		if hotkeys, warmArgs, hasWarmKeys = stripHotkeys(bindCmd, false); hasWarmKeys {
 			extendedWarmArgs := extendWarmArgs(warmArgs, len(hotkeys), false)
 			log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
 			bindCmd.Args = extendedWarmArgs
@@ -392,6 +394,12 @@ func (ex *connExecutor) execBind(
 			log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys)
 			ps.AST = nil
 		}
+
+		if len(hotkeys) > 0 {
+			ex.state.mu.txn.AddHotkeys(hotkeys, false)
+		}
+
+		log.Warningf(ctx, "jenndebugtxn ex.state.mu.txn:[%+v]", ex.state.mu.txn)
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
