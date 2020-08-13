@@ -88,8 +88,10 @@ func (ex *connExecutor) execStmt(
 
 	switch ex.machine.CurState().(type) {
 	case stateNoTxn:
+		log.Warningf(ctx, "jenndebugtxn stateNoTxn")
 		ev, payload = ex.execStmtInNoTxnState(ctx, stmt)
 	case stateOpen:
+		log.Warningf(ctx, "jenndebugtxn stateOpen")
 		if ex.server.cfg.Settings.CPUProfileType() == cluster.CPUProfileWithLabels {
 			remoteAddr := "internal"
 			if rAddr := ex.sessionData.RemoteAddr; rAddr != nil {
@@ -112,8 +114,10 @@ func (ex *connExecutor) execStmt(
 			ex.recordFailure()
 		}
 	case stateAborted:
+		log.Warningf(ctx, "jenndebugtxn stateAborted")
 		ev, payload = ex.execStmtInAbortedState(ctx, stmt, res)
 	case stateCommitWait:
+		log.Warningf(ctx, "jenndebugtxn stateCommitWait")
 		ev, payload = ex.execStmtInCommitWaitState(stmt, res)
 	default:
 		panic(fmt.Sprintf("unexpected txn state: %#v", ex.machine.CurState()))
