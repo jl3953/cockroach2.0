@@ -315,6 +315,7 @@ func (ex *connExecutor) execStmtInOpenState(
 		return ev, payload, nil
 	}
 
+	log.Warningf(ctx, "jenndebugmadeit")
 	switch s := stmt.AST.(type) {
 	case *tree.BeginTransaction:
 		log.Warning(ctx, "jenndebugmadeit")
@@ -427,6 +428,7 @@ func (ex *connExecutor) execStmtInOpenState(
 		}
 	}
 
+	log.Warningf(ctx, "jenndebugmadeit")
 	p.semaCtx.Annotations = tree.MakeAnnotations(stmt.NumAnnotations)
 
 	// For regular statements (the ones that get to this point), we
