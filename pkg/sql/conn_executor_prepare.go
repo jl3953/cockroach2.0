@@ -389,6 +389,9 @@ func (ex *connExecutor) execBind(
 		bindCmd.Args = extendedWarmArgs
 	} else {
 		log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys, warmArgs)
+		if bindCmd.PreparedStatementName == "kv-2" {
+			ps.AST = nil
+		}
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
