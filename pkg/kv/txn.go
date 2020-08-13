@@ -13,6 +13,7 @@ package kv
 import (
 	"context"
 	"fmt"
+	"google.golang.org/grpc"
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
@@ -49,6 +50,9 @@ type Txn struct {
 	// systemConfigTrigger is set to true when modifying keys from the SystemConfig
 	// span. This sets the SystemConfigTrigger on EndTxnRequest.
 	systemConfigTrigger bool
+
+	hotkeys [][]byte
+	isRead  bool
 
 	// mu holds fields that need to be synchronized for concurrent request execution.
 	mu struct {
@@ -163,6 +167,11 @@ func NewLeafTxn(
 // DB returns a transaction's DB.
 func (txn *Txn) DB() *DB {
 	return txn.db
+}
+
+func (txn *Txn) AddHotkeys(hotkeys [][]byte, isRead bool) {
+	txn.hotkeys = hotkeys
+	txn.isRead = isRead
 }
 
 // Sender returns a transaction's TxnSender.
@@ -582,9 +591,33 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 	return sendAndFill(ctx, txn.Send, b)
 }
 
+func contactHotshard(hotkeys [][]byte) *hlc.Timestamp {
+	// Set up a connection to the server
+	log.Printf("jenndebug attempt to connect to %v\n", address)
+	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+	if err != nil {
+		log.Fatalf("jenndebug did not connect: %v", err)
+	}
+	log.Printf("jenndebug connected to %v\n", address)
+	defer conn.Close()
+	c := pb.NewGreeterClient(conn)
+
+	// Contact the server and print out its response.
+	name := defaultName
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	log.Printf("jenndebug send rpc to server\n")
+	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	if err != nil {
+		log.Fatalf("jenndebug could not greet: %v", err)
+	}
+	log.Printf("jenndebug received server response: %s", r.GetMessage())
+}
+
 func (txn *Txn) commit(ctx context.Context) error {
 	log.Warningf(ctx, "jenndebugtxn txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
+
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
 	_, pErr := txn.Send(ctx, ba)
 	if pErr == nil {
