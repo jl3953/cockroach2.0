@@ -88,10 +88,8 @@ func (ex *connExecutor) execStmt(
 
 	switch ex.machine.CurState().(type) {
 	case stateNoTxn:
-		log.Warningf(ctx, "jenndebugtxn stateNoTxn")
 		ev, payload = ex.execStmtInNoTxnState(ctx, stmt)
 	case stateOpen:
-		log.Warningf(ctx, "jenndebugtxn stateOpen")
 		if ex.server.cfg.Settings.CPUProfileType() == cluster.CPUProfileWithLabels {
 			remoteAddr := "internal"
 			if rAddr := ex.sessionData.RemoteAddr; rAddr != nil {
@@ -103,7 +101,6 @@ func (ex *connExecutor) execStmt(
 				"stmt.tag", stmt.AST.StatementTag(),
 				"stmt.anonymized", stmt.AnonymizedStr,
 			)
-			log.Warningf(ctx, "jenndebugtxn stateOpen if")
 			pprof.Do(ctx, labels, func(ctx context.Context) {
 				ev, payload, err = ex.execStmtInOpenState(ctx, stmt, res, pinfo)
 			})
@@ -116,10 +113,8 @@ func (ex *connExecutor) execStmt(
 			ex.recordFailure()
 		}
 	case stateAborted:
-		log.Warningf(ctx, "jenndebugtxn stateAborted")
 		ev, payload = ex.execStmtInAbortedState(ctx, stmt, res)
 	case stateCommitWait:
-		log.Warningf(ctx, "jenndebugtxn stateCommitWait")
 		ev, payload = ex.execStmtInCommitWaitState(stmt, res)
 	default:
 		panic(fmt.Sprintf("unexpected txn state: %#v", ex.machine.CurState()))
@@ -148,6 +143,7 @@ func (ex *connExecutor) recordFailure() {
 func (ex *connExecutor) execStmtInOpenState(
 	ctx context.Context, stmt Statement, res RestrictedCommandResult, pinfo *tree.PlaceholderInfo,
 ) (retEv fsm.Event, retPayload fsm.EventPayload, retErr error) {
+	log.Warningf(ctx, "jenndebugmadeit")
 	ex.incrementStartedStmtCounter(stmt)
 	defer func() {
 		if retErr == nil && !payloadHasError(retPayload) {
@@ -665,6 +661,7 @@ func (ex *connExecutor) checkTableTwoVersionInvariant(ctx context.Context) error
 func (ex *connExecutor) commitSQLTransaction(
 	ctx context.Context, stmt tree.Statement,
 ) (fsm.Event, fsm.EventPayload) {
+	log.Warningf(ctx, "jenndebugmadeit")
 	err := ex.commitSQLTransactionInternal(ctx, stmt)
 	if err != nil {
 		return ex.makeErrEvent(err, stmt)
@@ -675,6 +672,7 @@ func (ex *connExecutor) commitSQLTransaction(
 func (ex *connExecutor) commitSQLTransactionInternal(
 	ctx context.Context, stmt tree.Statement,
 ) error {
+	log.Warningf(ctx, "jenndebugmadeit")
 	if err := validatePrimaryKeys(&ex.extraTxnState.descCollection); err != nil {
 		return err
 	}

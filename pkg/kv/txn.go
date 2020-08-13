@@ -628,7 +628,7 @@ func (txn *Txn) commit(ctx context.Context) error {
 	log.Warningf(ctx, "jenndebugtxn txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
 
-	func () {
+	func() {
 		txn.mu.Lock()
 		defer txn.mu.Unlock()
 		txn.mu.deadline = contactHotshard(txn.hotkeys)
@@ -666,6 +666,7 @@ func (txn *Txn) CleanupOnError(ctx context.Context, err error) {
 // up on failure. This can be used when the caller is prepared to do proper
 // cleanup.
 func (txn *Txn) Commit(ctx context.Context) error {
+	log.Warningf(ctx, "jenndebugmadeit")
 	if txn.typ != RootTxn {
 		return errors.WithContextTags(errors.AssertionFailedf("Commit() called on leaf txn"), ctx)
 	}
