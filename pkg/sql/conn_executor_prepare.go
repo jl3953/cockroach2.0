@@ -273,7 +273,6 @@ func isHotkey(key []byte) bool {
 
 	keyInt := binary.BigEndian.Uint64(key)
 	for _, hotkey := range hotkeys {
-		log.Warningf(context.Background(), "jenndebughot keyInt:[%+v], hotkey:[%+v]", keyInt, hotkey)
 		if keyInt == hotkey {
 			return true
 		}
@@ -388,7 +387,7 @@ func (ex *connExecutor) execBind(
 		log.Warningf(ctx, "jenndebug hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
 		bindCmd.Args = extendedWarmArgs
 	} else {
-		log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys, warmArgs)
+		log.Warningf(ctx, "jenndebug hotkeys:[%+v], no warmArgs", hotkeys)
 		if bindCmd.PreparedStatementName == "kv-2" {
 			ps.AST = nil
 		}
