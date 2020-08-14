@@ -629,9 +629,11 @@ func (txn *Txn) commit(ctx context.Context) error {
 	var ba roachpb.BatchRequest
 
 	func() {
-		txn.mu.Lock()
-		defer txn.mu.Unlock()
-		txn.mu.deadline = contactHotshard(txn.hotkeys)
+		if len(txn.hotkeys) > 0 {
+			txn.mu.Lock()
+			defer txn.mu.Unlock()
+			txn.mu.deadline = contactHotshard(txn.hotkeys)
+		}
 	}()
 
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))

@@ -16,6 +16,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"hash"
 	"math"
 	// "math/rand"
@@ -389,6 +390,7 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 	sort.Sort(byInt(argsInt))
 
 	argsInt[0] = 1994214
+	log.Warningf(context.Background(), "jenndebugread argsInt:[%+v]", argsInt)
 	return argsInt
 }
 
