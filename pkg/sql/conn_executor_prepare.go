@@ -380,7 +380,7 @@ func (ex *connExecutor) execBind(
 			"unknown prepared statement %q", bindCmd.PreparedStatementName))
 	}
 
-	// JENNDEBUGMARK
+	// JENNDEBUGMARK write-only txns stripped keys
 	log.Warningf(ctx, "jenndebugtxn, ctx:[%+v]", ctx)
 
 	if bindCmd.PreparedStatementName == "kv-2" {

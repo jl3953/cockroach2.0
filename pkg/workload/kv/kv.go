@@ -16,6 +16,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"hash"
 	"math"
 	// "math/rand"
@@ -420,6 +421,7 @@ func (o *kvOp) run(ctx context.Context) error {
 		}
 		// wrapping the single read statemnt in a txn
 		err = crdb.ExecuteInTx(ctx, (*workload.PgxTx)(tx), func() error {
+			log.Warningf(ctx, "jenndebugread args:[%+v]", args)
 			rows, err := o.readStmt.QueryTx(ctx, tx, args...)
 			if err != nil {
 				return err
