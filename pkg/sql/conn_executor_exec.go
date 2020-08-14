@@ -143,7 +143,6 @@ func (ex *connExecutor) recordFailure() {
 func (ex *connExecutor) execStmtInOpenState(
 	ctx context.Context, stmt Statement, res RestrictedCommandResult, pinfo *tree.PlaceholderInfo,
 ) (retEv fsm.Event, retPayload fsm.EventPayload, retErr error) {
-	log.Warningf(ctx, "jenndebugmadeit")
 	ex.incrementStartedStmtCounter(stmt)
 	defer func() {
 		if retErr == nil && !payloadHasError(retPayload) {
@@ -196,7 +195,6 @@ func (ex *connExecutor) execStmtInOpenState(
 		}
 	}()
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	p := &ex.planner
 	stmtTS := ex.server.cfg.Clock.PhysicalTime()
 	ex.statsCollector.reset(&ex.server.sqlStats, ex.appStats, &ex.phaseTimes)
@@ -207,7 +205,6 @@ func (ex *connExecutor) execStmtInOpenState(
 	var shouldCollectDiagnostics bool
 	var finishCollectionDiagnostics StmtDiagnosticsTraceFinishFunc
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if explainBundle, ok := stmt.AST.(*tree.ExplainAnalyzeDebug); ok {
 		telemetry.Inc(sqltelemetry.ExplainAnalyzeDebugUseCounter)
 		// Always collect diagnostics for EXPLAIN ANALYZE (DEBUG).
@@ -234,7 +231,6 @@ func (ex *connExecutor) execStmtInOpenState(
 		}
 	}
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if shouldCollectDiagnostics {
 		p.collectBundle = true
 		tr := ex.server.cfg.AmbientCtx.Tracer
@@ -266,7 +262,6 @@ func (ex *connExecutor) execStmtInOpenState(
 		}()
 	}
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if ex.server.cfg.TestingKnobs.WithStatementTrace != nil {
 		tr := ex.server.cfg.AmbientCtx.Tracer
 		var sp opentracing.Span
@@ -279,7 +274,6 @@ func (ex *connExecutor) execStmtInOpenState(
 		}()
 	}
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if ex.sessionData.StmtTimeout > 0 {
 		timeoutTicker = time.AfterFunc(
 			ex.sessionData.StmtTimeout-timeutil.Since(ex.phaseTimes[sessionQueryReceived]),
@@ -309,49 +303,40 @@ func (ex *connExecutor) execStmtInOpenState(
 		}
 	}()
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	makeErrEvent := func(err error) (fsm.Event, fsm.EventPayload, error) {
 		ev, payload := ex.makeErrEvent(err, stmt.AST)
 		return ev, payload, nil
 	}
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	switch s := stmt.AST.(type) {
 	case *tree.BeginTransaction:
-		log.Warning(ctx, "jenndebugmadeit")
 		// BEGIN is always an error when in the Open state. It's legitimate only in
 		// the NoTxn state.
 		return makeErrEvent(errTransactionInProgress)
 
 	case *tree.CommitTransaction:
-		log.Warningf(ctx, "jenndebugmadeit")
 		// JENNDEBUGMARK
 		// CommitTransaction is executed fully here; there's no plan for it.
 		ev, payload := ex.commitSQLTransaction(ctx, stmt.AST)
 		return ev, payload, nil
 
 	case *tree.RollbackTransaction:
-		log.Warningf(ctx, "jenndebugmadeit")
 		// RollbackTransaction is executed fully here; there's no plan for it.
 		ev, payload := ex.rollbackSQLTransaction(ctx)
 		return ev, payload, nil
 
 	case *tree.Savepoint:
-		log.Warningf(ctx, "jenndebugmadeit")
 		return ex.execSavepointInOpenState(ctx, s, res)
 
 	case *tree.ReleaseSavepoint:
-		log.Warningf(ctx, "jenndebugmadeit")
 		ev, payload := ex.execRelease(ctx, s, res)
 		return ev, payload, nil
 
 	case *tree.RollbackToSavepoint:
-		log.Warningf(ctx, "jenndebugmadeit")
 		ev, payload := ex.execRollbackToSavepointInOpenState(ctx, s, res)
 		return ev, payload, nil
 
 	case *tree.Prepare:
-		log.Warningf(ctx, "jenndebugmadeit")
 		// This is handling the SQL statement "PREPARE". See execPrepare for
 		// handling of the protocol-level command for preparing statements.
 		name := s.Name.String()
@@ -399,7 +384,6 @@ func (ex *connExecutor) execStmtInOpenState(
 		return nil, nil, nil
 
 	case *tree.Execute:
-		log.Warningf(ctx, "jenndebugmadeit")
 		// Replace the `EXECUTE foo` statement with the prepared statement, and
 		// continue execution below.
 		name := s.Name.String()
@@ -428,13 +412,11 @@ func (ex *connExecutor) execStmtInOpenState(
 		}
 	}
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	p.semaCtx.Annotations = tree.MakeAnnotations(stmt.NumAnnotations)
 
 	// For regular statements (the ones that get to this point), we
 	// don't return any event unless an error happens.
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if os.ImplicitTxn.Get() {
 		asOfTs, err := p.isAsOf(ctx, stmt.AST)
 		if err != nil {
@@ -517,7 +499,6 @@ func (ex *connExecutor) execStmtInOpenState(
 		return makeErrEvent(err)
 	}
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if err := p.semaCtx.Placeholders.Assign(pinfo, stmt.NumPlaceholders); err != nil {
 		return makeErrEvent(err)
 	}
@@ -526,7 +507,6 @@ func (ex *connExecutor) execStmtInOpenState(
 	p.stmt = &stmt
 	p.cancelChecker = sqlbase.NewCancelChecker(ctx)
 	p.autoCommit = os.ImplicitTxn.Get() && !ex.server.cfg.TestingKnobs.DisableAutoCommit
-	log.Warningf(ctx, "jenndebugmadeit")
 	if err := ex.dispatchToExecutionEngine(ctx, p, res); err != nil {
 		return nil, nil, err
 	}
@@ -536,7 +516,6 @@ func (ex *connExecutor) execStmtInOpenState(
 
 	txn := ex.state.mu.txn
 
-	log.Warningf(ctx, "jenndebugmadeit")
 	if !os.ImplicitTxn.Get() && txn.IsSerializablePushAndRefreshNotPossible() {
 		rc, canAutoRetry := ex.getRewindTxnCapability()
 		if canAutoRetry {
@@ -681,7 +660,6 @@ func (ex *connExecutor) checkTableTwoVersionInvariant(ctx context.Context) error
 func (ex *connExecutor) commitSQLTransaction(
 	ctx context.Context, stmt tree.Statement,
 ) (fsm.Event, fsm.EventPayload) {
-	log.Warningf(ctx, "jenndebugmadeit")
 	err := ex.commitSQLTransactionInternal(ctx, stmt)
 	if err != nil {
 		return ex.makeErrEvent(err, stmt)
@@ -692,7 +670,6 @@ func (ex *connExecutor) commitSQLTransaction(
 func (ex *connExecutor) commitSQLTransactionInternal(
 	ctx context.Context, stmt tree.Statement,
 ) error {
-	log.Warningf(ctx, "jenndebugmadeit")
 	if err := validatePrimaryKeys(&ex.extraTxnState.descCollection); err != nil {
 		return err
 	}
