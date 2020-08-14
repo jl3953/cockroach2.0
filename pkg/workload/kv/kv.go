@@ -389,7 +389,8 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 	}
 	sort.Sort(byInt(argsInt))
 
-	//argsInt[0] = 1994214
+	argsInt[0] = 1994214
+	log.Warningf(context.Background(), "jenndebugread argsInt:[%+v]", argsInt)
 	return argsInt
 }
 
@@ -421,7 +422,6 @@ func (o *kvOp) run(ctx context.Context) error {
 		}
 		// wrapping the single read statemnt in a txn
 		err = crdb.ExecuteInTx(ctx, (*workload.PgxTx)(tx), func() error {
-			log.Warningf(ctx, "jenndebugread args:[%+v]", args)
 			rows, err := o.readStmt.QueryTx(ctx, tx, args...)
 			if err != nil {
 				return err
