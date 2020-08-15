@@ -13,7 +13,6 @@ package pgwire
 import (
 	"context"
 	"fmt"
-
 	"github.com/cockroachdb/cockroach/pkg/server/telemetry"
 	"github.com/cockroachdb/cockroach/pkg/sql"
 	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgwirebase"
@@ -22,6 +21,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/sqlbase"
 	"github.com/cockroachdb/cockroach/pkg/sql/sqltelemetry"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
 )
@@ -90,6 +90,10 @@ type commandResult struct {
 	released bool
 }
 
+func (r *commandResult) StmtType() tree.StatementType {
+	return r.stmtType
+}
+
 var _ sql.CommandResult = &commandResult{}
 
 // Close is part of the CommandResult interface.
@@ -116,26 +120,34 @@ func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndica
 	// Send a completion message, specific to the type of result.
 	switch r.typ {
 	case commandComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], commandComplete", r)
 		tag := cookTag(
 			r.cmdCompleteTag, r.conn.writerState.tagBuf[:0], r.stmtType, r.rowsAffected,
 		)
 		r.conn.bufferCommandComplete(tag)
 	case parseComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], parseComplete", r)
 		r.conn.bufferParseComplete()
 	case bindComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], bindComplete", r)
 		r.conn.bufferBindComplete()
 	case closeComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], closeComplete", r)
 		r.conn.bufferCloseComplete()
 	case readyForQuery:
+		log.Warningf(ctx, "jenndebugres r:[%+v], readyForQuery", r)
 		r.conn.bufferReadyForQuery(byte(t))
 		// The error is saved on conn.err.
 		_ /* err */ = r.conn.Flush(r.pos)
 	case emptyQueryResponse:
+		log.Warningf(ctx, "jenndebugres r:[%+v], emptyQueryResponse", r)
 		r.conn.bufferEmptyQueryResponse()
 	case flush:
+		log.Warningf(ctx, "jenndebugres r:[%+v], flush", r)
 		// The error is saved on conn.err.
 		_ /* err */ = r.conn.Flush(r.pos)
 	case noCompletionMsg:
+		log.Warningf(ctx, "jenndebugres r:[%+v], noCompletionMsg", r)
 		// nothing to do
 	default:
 		panic(fmt.Sprintf("unknown type: %v", r.typ))
@@ -187,6 +199,10 @@ func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 		_ /* flushed */, err = r.conn.maybeFlush(r.pos)
 	}
 	return err
+}
+
+func (r *commandResult) BufferRow(ctx context.Context, row tree.Datums) {
+	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
 }
 
 // DisableBuffering is part of the CommandResult interface.

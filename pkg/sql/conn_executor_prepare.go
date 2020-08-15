@@ -367,9 +367,11 @@ func (ex *connExecutor) execBind(
 	// JENNDEBUGMARK write-only txns stripped keys
 	log.Warningf(ctx, "jenndebugtxn stripped keys, ctx:[%+v]", ctx)
 
-	var hotkeys, warmArgs [][]byte
-	var hasWarmKeys bool
 	if bindCmd.PreparedStatementName == "kv-2" {
+		// jenndebug extracting any write hotkeys
+
+		var hotkeys, warmArgs [][]byte
+		var hasWarmKeys bool
 		if hotkeys, warmArgs, hasWarmKeys = stripHotkeysWrite(bindCmd); hasWarmKeys {
 			extendedWarmArgs := extendWarmArgsWrite(warmArgs, len(hotkeys))
 			log.Warningf(ctx, "jenndebugwrite hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
@@ -380,12 +382,16 @@ func (ex *connExecutor) execBind(
 		}
 
 		if len(hotkeys) > 0 {
-			ex.state.mu.txn.AddHotkeys(hotkeys, false)
+			ex.state.mu.txn.AddWriteHotkeys(hotkeys)
+			log.Warningf(ctx, "jenndebugwrite ex.state.mu.txn:[%+v]", ex.state.mu.txn)
 		}
 
-		log.Warningf(ctx, "jenndebugwrite ex.state.mu.txn:[%+v]", ex.state.mu.txn)
-
 	} else if bindCmd.PreparedStatementName == "kv-1" {
+
+		// jenndebug extracting any read hotkeys
+		var hotkeys, warmArgs [][]byte
+		var hasWarmKeys bool
+
 		if hotkeys, warmArgs, hasWarmKeys = stripHotkeysRead(bindCmd); hasWarmKeys {
 			extendedWarmArgs := extendWarmArgsRead(warmArgs, len(hotkeys))
 			log.Warningf(ctx, "jenndebugread hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
@@ -396,7 +402,21 @@ func (ex *connExecutor) execBind(
 		}
 
 		if len(hotkeys) > 0 {
-			ex.state.mu.txn.AddHotkeys(hotkeys, true)
+			ex.state.mu.txn.AddReadHotkeys(hotkeys)
+			log.Warningf(ctx, "jenndebugread ex.state.mu.txn:[%+v]", ex.state.mu.txn)
+		}
+
+		// jenndebug sending RPC query
+		if ex.state.mu.txn.HasWriteHotkeys() || ex.state.mu.txn.HasReadHotkeys() {
+			log.Warningf(ctx, "jenndebugrpc, ex.state.mu.txn.HasWriteHotkeys():[%+v], ex.state.mu.txn.HasReadHotkeys():[%+v]",
+				ex.state.mu.txn.HasWriteHotkeys(), ex.state.mu.txn.HasReadHotkeys())
+			hotkeyReadResults, deadline := ex.state.mu.txn.ContactHotshard(
+				ex.state.mu.txn.GetAndClearWriteHotkeys(), ex.state.mu.txn.GetAndClearReadHotkeys())
+
+			ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
+			ex.state.mu.txn.UpdateDeadline(deadline)
+			log.Warningf(ctx, "jenndebugrpc, resultReadHotkeys:[%+v], updated deadline:[%+v], txn:[%+v]",
+				hotkeyReadResults, deadline, ex.state.mu.txn)
 		}
 	}
 

@@ -12,6 +12,7 @@ package kv
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
@@ -52,8 +53,9 @@ type Txn struct {
 	// span. This sets the SystemConfigTrigger on EndTxnRequest.
 	systemConfigTrigger bool
 
-	hotkeys [][]byte
-	isRead  bool
+	writeHotkeys      [][]byte
+	readHotkeys       [][]byte
+	resultReadHotkeys [][]byte
 
 	// mu holds fields that need to be synchronized for concurrent request execution.
 	mu struct {
@@ -170,9 +172,58 @@ func (txn *Txn) DB() *DB {
 	return txn.db
 }
 
-func (txn *Txn) AddHotkeys(hotkeys [][]byte, isRead bool) {
-	txn.hotkeys = hotkeys
-	txn.isRead = isRead
+func (txn *Txn) AddWriteHotkeys(hotkeys [][]byte) {
+	txn.writeHotkeys = append(txn.writeHotkeys, hotkeys...)
+}
+
+func (txn *Txn) AddReadHotkeys(hotkeys [][]byte) {
+	txn.readHotkeys = append(txn.readHotkeys, hotkeys...)
+}
+
+func (txn *Txn) HasWriteHotkeys() bool {
+	return len(txn.writeHotkeys) > 0
+}
+
+func (txn *Txn) HasReadHotkeys() bool {
+	return len(txn.readHotkeys) > 0
+}
+
+func (txn *Txn) GetAndClearWriteHotkeys() [][]byte {
+	if len(txn.writeHotkeys) > 0 {
+		temp := txn.writeHotkeys
+		txn.writeHotkeys = make([][]byte, 0)
+		return temp
+	} else {
+		return nil
+	}
+}
+
+func (txn *Txn) GetAndClearReadHotkeys() [][]byte {
+	if len(txn.readHotkeys) > 0 {
+		temp := txn.readHotkeys
+		txn.readHotkeys = make([][]byte, 0)
+		return temp
+	} else {
+		return nil
+	}
+}
+
+func (txn *Txn) AddResultReadHotkeys(results [][]byte) {
+	txn.resultReadHotkeys = append(txn.resultReadHotkeys, results...)
+}
+
+func (txn *Txn) HasResultReadHotkeys() bool {
+	return len(txn.resultReadHotkeys) > 0
+}
+
+func (txn *Txn) GetAndClearResultReadHotkeys() [][]byte {
+	if len(txn.resultReadHotkeys) > 0 {
+		temp := txn.resultReadHotkeys
+		txn.resultReadHotkeys = make([][]byte, 0)
+		return temp
+	} else {
+		return nil
+	}
 }
 
 // Sender returns a transaction's TxnSender.
@@ -592,18 +643,16 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 	return sendAndFill(ctx, txn.Send, b)
 }
 
-func contactHotshard(_ [][]byte) *hlc.Timestamp {
+func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, hlc.Timestamp) {
 
 	address := "localhost:50051"
 	defaultName := "world"
 
 	// Set up a connection to the server
-	log.Warningf(context.Background(), "jenndebugrpc attempt to connect to %v\n", address)
 	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
 		log.Fatalf(context.Background(), "jenndebugrpc did not connect: %v", err)
 	}
-	log.Warningf(context.Background(), "jenndebugrpc connected to %v\n", address)
 	defer conn.Close()
 	c := pb.NewGreeterClient(conn)
 
@@ -611,30 +660,38 @@ func contactHotshard(_ [][]byte) *hlc.Timestamp {
 	name := defaultName
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	log.Warningf(context.Background(), "jenndebugrpc send rpc to server\n")
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
 		log.Fatalf(context.Background(), "jenndebugrpc could not greet, err:[%v]", err)
 	}
-	log.Warningf(context.Background(), "jenndebugrpc received server response: %s", r.GetMessage())
 
 	deadline := new(hlc.Timestamp)
 	clock := hlc.NewClock(hlc.UnixNano, 1)
 	*deadline = clock.Now()
-	return deadline
+	log.Warningf(context.Background(), "jenndebugrpc, response:[%+v], writeHotkeys:[%+v], readHotkeys:[%+v], deadline:[%+v]",
+		r, writeHotkeys, readHotkeys, *deadline)
+
+	readResults := make([][]byte, 2)
+	readResults[0] = make([]byte, 8)
+	binary.BigEndian.PutUint64(readResults[0], 1994214)
+	readResults[1] = make([]byte, 8)
+	binary.BigEndian.PutUint64(readResults[1], 214)
+
+	return readResults, *deadline
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
-	log.Warningf(ctx, "jenndebugtxn txn:[%+v], ctx:[%+v]", txn, ctx)
+	log.Warningf(ctx, "jenndebugcommit txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
 
-	func() {
-		if len(txn.hotkeys) > 0 {
-			txn.mu.Lock()
-			defer txn.mu.Unlock()
-			txn.mu.deadline = contactHotshard(txn.hotkeys)
-		}
-	}()
+	// jenndebug by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
+	// we know this is a write-only txn with write hotkeys but no read hotkeys. Otherwise, this
+	// rpc would have fired off in the execution of the SELECT statement.
+	if txn.HasWriteHotkeys() {
+		_, deadline := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), nil)
+		txn.UpdateDeadline(deadline)
+	}
+	// JENNDEBUGMARK I SURE HOPE NOTHING FAILS AFTER THIS
 
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
 	_, pErr := txn.Send(ctx, ba)
@@ -734,6 +791,13 @@ func (txn *Txn) UpdateDeadlineMaybe(ctx context.Context, deadline hlc.Timestamp)
 		return true
 	}
 	return false
+}
+
+func (txn *Txn) UpdateDeadline(deadline hlc.Timestamp) {
+	txn.mu.Lock()
+	defer txn.mu.Unlock()
+	txn.mu.deadline = new(hlc.Timestamp)
+	*txn.mu.deadline = deadline
 }
 
 // resetDeadlineLocked resets the deadline.

@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime/debug"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -377,7 +376,6 @@ Loop:
 
 		case pgwirebase.ClientMsgParse:
 			err = c.handleParse(ctx, &c.readBuf, intSizer.GetUnqualifiedIntSize())
-			debug.PrintStack()
 
 		case pgwirebase.ClientMsgDescribe:
 			err = c.handleDescribe(ctx, &c.readBuf)
@@ -1308,6 +1306,7 @@ func (c *conn) Flush(pos sql.CmdPos) error {
 	c.writerState.fi.lastFlushed = pos
 	c.writerState.fi.cmdStarts = make(map[sql.CmdPos]int)
 
+	log.Warningf(context.Background(), "jenndebugres c.writerState.buf:[%+v], c.writerState.tagBuf:[%+v]", c.writerState.buf, c.writerState.tagBuf)
 	_ /* n */, err := c.writerState.buf.WriteTo(c.conn)
 	if err != nil {
 		c.setErr(err)
