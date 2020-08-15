@@ -13,7 +13,6 @@ package pgwire
 import (
 	"context"
 	"fmt"
-
 	"github.com/cockroachdb/cockroach/pkg/server/telemetry"
 	"github.com/cockroachdb/cockroach/pkg/sql"
 	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgwirebase"
@@ -22,6 +21,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/sqlbase"
 	"github.com/cockroachdb/cockroach/pkg/sql/sqltelemetry"
 	"github.com/cockroachdb/cockroach/pkg/sql/types"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
 )
@@ -94,6 +94,8 @@ var _ sql.CommandResult = &commandResult{}
 
 // Close is part of the CommandResult interface.
 func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndicator) {
+	log.Warningf(ctx, "jenndebugres commandResult.Close()")
+	log.DumpStacks(ctx)
 	r.assertNotReleased()
 	defer r.release()
 	if r.errExpected && r.err == nil {
@@ -114,6 +116,7 @@ func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndica
 	r.flushBeforeCloseFuncs = nil
 
 	// Send a completion message, specific to the type of result.
+	log.Warningf(ctx, "jenndebugres r:[%+v], r.typ:[%+v]")
 	switch r.typ {
 	case commandComplete:
 		tag := cookTag(
