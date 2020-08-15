@@ -116,7 +116,7 @@ func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndica
 	r.flushBeforeCloseFuncs = nil
 
 	// Send a completion message, specific to the type of result.
-	log.Warningf(ctx, "jenndebugres r:[%+v], r.typ:[%+v]")
+	log.Warningf(ctx, "jenndebugres r:[%+v], r.typ:[%+v]", r, r.typ)
 	switch r.typ {
 	case commandComplete:
 		tag := cookTag(
