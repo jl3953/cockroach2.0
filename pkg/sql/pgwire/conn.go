@@ -1308,6 +1308,7 @@ func (c *conn) Flush(pos sql.CmdPos) error {
 	c.writerState.fi.lastFlushed = pos
 	c.writerState.fi.cmdStarts = make(map[sql.CmdPos]int)
 
+	log.Warningf(context.Background(), "jenndebugres c.writerState.buf:[%+v], c.writerState.tagBuf:[%+v]", c.writerState.buf, c.writerState.tagBuf)
 	_ /* n */, err := c.writerState.buf.WriteTo(c.conn)
 	if err != nil {
 		c.setErr(err)

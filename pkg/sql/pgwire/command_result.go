@@ -24,7 +24,6 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
-	"runtime/debug"
 )
 
 type completionMsgType int
@@ -95,8 +94,6 @@ var _ sql.CommandResult = &commandResult{}
 
 // Close is part of the CommandResult interface.
 func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndicator) {
-	log.Warningf(ctx, "jenndebugres commandResult.Close()")
-	debug.PrintStack()
 	r.assertNotReleased()
 	defer r.release()
 	if r.errExpected && r.err == nil {
