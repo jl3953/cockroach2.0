@@ -1533,8 +1533,8 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 				res.SetError(pe.errorCause())
 			}
 		}
-		if readResults, ok := ex.state.mu.txn.GetAndClearHotkeyResults(); ok {
-			if resC, ok := res.(CommandResult); ok {
+		if resC, ok := res.(CommandResult); ok {
+			if readResults, ok := ex.state.mu.txn.GetAndClearHotkeyResults(); ok {
 				hotkey := binary.BigEndian.Uint64(readResults[0])
 				val := binary.BigEndian.Uint64(readResults[1])
 				resC.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
