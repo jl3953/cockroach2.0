@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"runtime/debug"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -377,7 +376,6 @@ Loop:
 
 		case pgwirebase.ClientMsgParse:
 			err = c.handleParse(ctx, &c.readBuf, intSizer.GetUnqualifiedIntSize())
-			debug.PrintStack()
 
 		case pgwirebase.ClientMsgDescribe:
 			err = c.handleDescribe(ctx, &c.readBuf)
