@@ -180,6 +180,16 @@ func (txn *Txn) AddHotkeys(hotkeys [][]byte, isRead bool) {
 	}
 }
 
+func (txn *Txn) GetAndClearHotkeyResults() ([][]byte, bool) {
+	if len(txn.readResults) > 0 {
+		results := txn.readResults
+		txn.readResults = make([][]byte, 0)
+		return results, true
+	} else {
+		return nil, false
+	}
+}
+
 // Sender returns a transaction's TxnSender.
 func (txn *Txn) Sender() TxnSender {
 	txn.mu.Lock()

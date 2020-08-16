@@ -12,6 +12,7 @@ package sql
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -1530,6 +1531,14 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			ex.sessionEventf(ctx, "execution error: %s", pe.errorCause())
 			if resErr == nil {
 				res.SetError(pe.errorCause())
+			}
+		}
+		if readResults, ok := ex.state.mu.txn.GetAndClearHotkeyResults(); ok {
+			if resC, ok := res.(CommandResult); ok {
+				hotkey := binary.BigEndian.Uint64(readResults[0])
+				val := binary.BigEndian.Uint64(readResults[1])
+				resC.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
+				log.Warningf(ctx, "jenndebugres, add row before close() res:[%+v], resC:[%+v]", res, resC)
 			}
 		}
 		res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
