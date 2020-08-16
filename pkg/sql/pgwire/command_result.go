@@ -24,6 +24,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
+	"runtime/debug"
 )
 
 type completionMsgType int
@@ -117,6 +118,10 @@ func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndica
 	switch r.typ {
 	case commandComplete:
 		log.Warningf(ctx, "jenndebugres r:[%+v], commandComplete", r)
+		if r.cmdCompleteTag == "COMMIT" {
+			debug.PrintStack()
+			log.DumpStacks(ctx)
+		}
 		tag := cookTag(
 			r.cmdCompleteTag, r.conn.writerState.tagBuf[:0], r.stmtType, r.rowsAffected,
 		)

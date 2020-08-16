@@ -55,6 +55,7 @@ type Txn struct {
 
 	writeHotkeys [][]byte
 	readHotkeys  [][]byte
+	readResults  [][]byte
 
 	// mu holds fields that need to be synchronized for concurrent request execution.
 	mu struct {
@@ -641,9 +642,8 @@ func (txn *Txn) commit(ctx context.Context) error {
 		if len(txn.writeHotkeys) > 0 || len(txn.readHotkeys) > 0 {
 			txn.mu.Lock()
 			defer txn.mu.Unlock()
-			var readResults [][]byte
-			readResults, txn.mu.deadline = contactHotshard(txn.writeHotkeys, txn.readHotkeys)
-			log.Warningf(ctx, "jenndebugcommit readResults:[%+v]", readResults)
+			txn.readResults, txn.mu.deadline = contactHotshard(txn.writeHotkeys, txn.readHotkeys)
+			log.Warningf(ctx, "jenndebugcommit readResults:[%+v]", txn.readResults)
 		}
 	}()
 	// JENNDEBUGMARK I SURE HOPE NOTHING FAILS AFTER THIS
