@@ -634,7 +634,7 @@ func contactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, *hl
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
-	log.Warningf(ctx, "jenndebugtxn commit() txn:[%+v], ctx:[%+v]", txn, ctx)
+	log.Warningf(ctx, "jenndebugcommit txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
 
 	func() {
@@ -643,6 +643,7 @@ func (txn *Txn) commit(ctx context.Context) error {
 			defer txn.mu.Unlock()
 			var readResults [][]byte
 			readResults, txn.mu.deadline = contactHotshard(txn.writeHotkeys, txn.readHotkeys)
+			log.Warningf(ctx, "jenndebugcommit readResults:[%+v]", readResults)
 		}
 	}()
 	// JENNDEBUGMARK I SURE HOPE NOTHING FAILS AFTER THIS
