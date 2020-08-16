@@ -1533,7 +1533,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 				res.SetError(pe.errorCause())
 			}
 		}
-		if resC, ok := res.(CommandResult); ok {
+		if resC, ok := res.(CommandResult); ok && ex.state.mu.txn != nil {
 			if readResults, ok := ex.state.mu.txn.GetAndClearHotkeyResults(); ok {
 				hotkey := binary.BigEndian.Uint64(readResults[0])
 				val := binary.BigEndian.Uint64(readResults[1])
