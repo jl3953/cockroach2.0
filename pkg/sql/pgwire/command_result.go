@@ -24,6 +24,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
+	"runtime/debug"
 )
 
 type completionMsgType int
@@ -95,7 +96,7 @@ var _ sql.CommandResult = &commandResult{}
 // Close is part of the CommandResult interface.
 func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndicator) {
 	log.Warningf(ctx, "jenndebugres commandResult.Close()")
-	log.DumpStacks(ctx)
+	debug.PrintStack()
 	r.assertNotReleased()
 	defer r.release()
 	if r.errExpected && r.err == nil {
@@ -116,29 +117,36 @@ func (r *commandResult) Close(ctx context.Context, t sql.TransactionStatusIndica
 	r.flushBeforeCloseFuncs = nil
 
 	// Send a completion message, specific to the type of result.
-	log.Warningf(ctx, "jenndebugres r:[%+v], r.typ:[%+v]", r, r.typ)
 	switch r.typ {
 	case commandComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], commandComplete", r)
 		tag := cookTag(
 			r.cmdCompleteTag, r.conn.writerState.tagBuf[:0], r.stmtType, r.rowsAffected,
 		)
 		r.conn.bufferCommandComplete(tag)
 	case parseComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], parseComplete", r)
 		r.conn.bufferParseComplete()
 	case bindComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], bindComplete", r)
 		r.conn.bufferBindComplete()
 	case closeComplete:
+		log.Warningf(ctx, "jenndebugres r:[%+v], closeComplete", r)
 		r.conn.bufferCloseComplete()
 	case readyForQuery:
+		log.Warningf(ctx, "jenndebugres r:[%+v], readyForQuery", r)
 		r.conn.bufferReadyForQuery(byte(t))
 		// The error is saved on conn.err.
 		_ /* err */ = r.conn.Flush(r.pos)
 	case emptyQueryResponse:
+		log.Warningf(ctx, "jenndebugres r:[%+v], emptyQueryResponse", r)
 		r.conn.bufferEmptyQueryResponse()
 	case flush:
+		log.Warningf(ctx, "jenndebugres r:[%+v], flush", r)
 		// The error is saved on conn.err.
 		_ /* err */ = r.conn.Flush(r.pos)
 	case noCompletionMsg:
+		log.Warningf(ctx, "jenndebugres r:[%+v], noCompletionMsg", r)
 		// nothing to do
 	default:
 		panic(fmt.Sprintf("unknown type: %v", r.typ))
