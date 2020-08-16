@@ -1535,9 +1535,9 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		}
 		if resC, ok := res.(CommandResult); ok && ex.state.mu.txn != nil {
 			if readResults, ok := ex.state.mu.txn.GetAndClearHotkeyResults(); ok {
-				hotkey := binary.BigEndian.Uint64(readResults[0])
-				val := binary.BigEndian.Uint64(readResults[1])
-				resC.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
+				_ = binary.BigEndian.Uint64(readResults[0])
+				_ = binary.BigEndian.Uint64(readResults[1])
+				// resC.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
 				log.Warningf(ctx, "jenndebugres, add row before close() res:[%+v], resC:[%+v]", res, resC)
 			}
 		}
