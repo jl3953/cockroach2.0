@@ -1433,6 +1433,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		log.Warningf(ctx, "jenndebugres, stmtRes:[%+v]", stmtRes)
 	case PrepareStmt:
 		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
 		ex.curStmt = tcmd.AST
