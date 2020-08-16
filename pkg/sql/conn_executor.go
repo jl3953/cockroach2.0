@@ -1374,7 +1374,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		// ExecPortal is handled like ExecStmt, except that the placeholder info
 		// is taken from the portal.
 
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		portal, ok := ex.extraTxnState.prepStmtsNamespace.portals[tcmd.Name]
 		if !ok {
 			err := pgerror.Newf(
@@ -1435,31 +1435,31 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		}
 		log.Warningf(ctx, "jenndebugres, stmtRes:[%+v]", stmtRes)
 	case PrepareStmt:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		ex.curStmt = tcmd.AST
 		res = ex.clientComm.CreatePrepareResult(pos)
 		stmtCtx := withStatement(ctx, ex.curStmt)
 		ev, payload = ex.execPrepare(stmtCtx, tcmd)
 	case DescribeStmt:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		descRes := ex.clientComm.CreateDescribeResult(pos)
 		res = descRes
 		ev, payload = ex.execDescribe(ctx, tcmd, descRes)
 	case BindStmt:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		res = ex.clientComm.CreateBindResult(pos)
 		ev, payload = ex.execBind(ctx, tcmd)
 	case DeletePreparedStmt:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		res = ex.clientComm.CreateDeleteResult(pos)
 		ev, payload = ex.execDelPrepStmt(ctx, tcmd)
 	case SendError:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		res = ex.clientComm.CreateErrorResult(pos)
 		ev = eventNonRetriableErr{IsCommit: fsm.False}
 		payload = eventNonRetriableErrPayload{err: tcmd.Err}
 	case Sync:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		// Note that the Sync result will flush results to the network connection.
 		res = ex.clientComm.CreateSyncResult(pos)
 		if ex.draining {
@@ -1475,7 +1475,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			}
 		}
 	case CopyIn:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		res = ex.clientComm.CreateCopyInResult(pos)
 		var err error
 		ev, payload, err = ex.execCopyIn(ctx, tcmd)
@@ -1483,7 +1483,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			return err
 		}
 	case DrainRequest:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		// We received a drain request. We terminate immediately if we're not in a
 		// transaction. If we are in a transaction, we'll finish as soon as a Sync
 		// command (i.e. the end of a batch) is processed outside of a
@@ -1494,7 +1494,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			return errDrainingComplete
 		}
 	case Flush:
-		log.Warningf(ctx, "jenndebug typecmd:[%+v], ctx:[%+v]", tcmd, ctx)
+		log.Warningf(ctx, "jenndebug typecmd:[%+v]", tcmd)
 		// Closing the res will flush the connection's buffer.
 		res = ex.clientComm.CreateFlushResult(pos)
 	default:
