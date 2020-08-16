@@ -466,7 +466,7 @@ func (o *kvOp) run(ctx context.Context) error {
 	for i := 0; i < o.config.batchSize; i++ {
 		j := i * argCount
 		args[j+0] = argsInt[i]
-		args[j+1] = randomBlock(o.config, o.g.rand())
+		args[j+1] = int64(214) //randomBlock(o.config, o.g.rand())
 	} //jenndebug
 
 	tx, err := o.mcp.Get().BeginEx(ctx, &pgx.TxOptions{
