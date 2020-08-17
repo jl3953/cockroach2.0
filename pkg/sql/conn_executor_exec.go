@@ -12,6 +12,7 @@ package sql
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"runtime/pprof"
 	"strings"
@@ -834,6 +835,17 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	)
 	if ex.server.cfg.TestingKnobs.AfterExecute != nil {
 		ex.server.cfg.TestingKnobs.AfterExecute(ctx, stmt.String(), res.Err())
+	}
+
+	//jennedebug put result read hotkeys here
+	if ex.state.mu.txn.HasResultReadHotkeys() {
+		hotkeys := ex.state.mu.txn.GetAndClearWriteHotkeys()
+
+		hotkey := binary.BigEndian.Uint64(hotkeys[0])
+		val := binary.BigEndian.Uint64(hotkeys[1])
+
+		res.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
+		log.Warningf(ctx, "jenndebugres, added row")
 	}
 
 	return err
