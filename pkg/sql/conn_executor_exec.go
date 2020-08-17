@@ -778,7 +778,7 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	if err := ex.initStatementResult(ctx, res, stmt, cols); err != nil {
 		res.SetError(err)
 		return nil
-	}
+	} // JENNDEBUGMARKHECK
 
 	ex.sessionTracing.TracePlanCheckStart(ctx)
 	distributePlan := getPlanDistribution(

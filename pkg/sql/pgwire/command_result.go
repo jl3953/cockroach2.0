@@ -90,6 +90,10 @@ type commandResult struct {
 	released bool
 }
 
+func (r *commandResult) StmtType() tree.StatementType {
+	return r.stmtType
+}
+
 var _ sql.CommandResult = &commandResult{}
 
 // Close is part of the CommandResult interface.
@@ -195,6 +199,10 @@ func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 		_ /* flushed */, err = r.conn.maybeFlush(r.pos)
 	}
 	return err
+}
+
+func (r *commandResult) BufferRow(ctx context.Context, row tree.Datums) {
+	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
 }
 
 // DisableBuffering is part of the CommandResult interface.

@@ -53,9 +53,9 @@ type Txn struct {
 	// span. This sets the SystemConfigTrigger on EndTxnRequest.
 	systemConfigTrigger bool
 
-	writeHotkeys [][]byte
-	readHotkeys  [][]byte
-	readResults  [][]byte
+	writeHotkeys      [][]byte
+	readHotkeys       [][]byte
+	resultReadHotkeys [][]byte
 
 	// mu holds fields that need to be synchronized for concurrent request execution.
 	mu struct {
@@ -172,21 +172,57 @@ func (txn *Txn) DB() *DB {
 	return txn.db
 }
 
-func (txn *Txn) AddHotkeys(hotkeys [][]byte, isRead bool) {
-	if isRead {
-		txn.readHotkeys = append(txn.readHotkeys, hotkeys...)
+func (txn *Txn) AddWriteHotkeys(hotkeys [][]byte) {
+	txn.writeHotkeys = append(txn.writeHotkeys, hotkeys...)
+}
+
+func (txn *Txn) AddReadHotkeys(hotkeys [][]byte) {
+	txn.readHotkeys = append(txn.readHotkeys, hotkeys...)
+}
+
+func (txn *Txn) HasWriteHotkeys() bool {
+	return len(txn.writeHotkeys) > 0
+}
+
+func (txn *Txn) HasReadHotkeys() bool {
+	return len(txn.readHotkeys) > 0
+}
+
+func (txn *Txn) GetAndClearWriteHotkeys() [][]byte {
+	if len(txn.writeHotkeys) > 0 {
+		temp := txn.writeHotkeys
+		txn.writeHotkeys = make([][]byte, 0)
+		return temp
 	} else {
-		txn.writeHotkeys = append(txn.writeHotkeys, hotkeys...)
+		return nil
 	}
 }
 
-func (txn *Txn) GetAndClearHotkeyResults() ([][]byte, bool) {
-	if len(txn.readResults) > 0 {
-		results := txn.readResults
-		txn.readResults = make([][]byte, 0)
-		return results, true
+func (txn *Txn) GetAndClearReadHotkeys() [][]byte {
+	if len(txn.readHotkeys) > 0 {
+		temp := txn.readHotkeys
+		txn.readHotkeys = make([][]byte, 0)
+		return temp
 	} else {
-		return nil, false
+		return nil
+	}
+}
+
+func (txn *Txn) AddResultReadHotkeys(results [][]byte) {
+	txn.resultReadHotkeys = append(txn.resultReadHotkeys, results...)
+}
+
+func (txn *Txn) HasResultReadHotkeys() bool {
+	return len(txn.resultReadHotkeys) > 0
+}
+
+func (txn *Txn) GetAndClearResultReadHotkeys() [][]byte {
+	if len(txn.resultReadHotkeys) > 0 {
+		temp := txn.resultReadHotkeys
+		txn.resultReadHotkeys = make([][]byte, 0)
+		return temp
+	} else {
+		return nil
 	}
 }
 
@@ -607,7 +643,7 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 	return sendAndFill(ctx, txn.Send, b)
 }
 
-func contactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, *hlc.Timestamp) {
+func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, hlc.Timestamp) {
 
 	address := "localhost:50051"
 	defaultName := "world"
@@ -641,21 +677,20 @@ func contactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, *hl
 	readResults[1] = make([]byte, 8)
 	binary.BigEndian.PutUint64(readResults[1], 214)
 
-	return readResults, deadline
+	return readResults, *deadline
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
 	log.Warningf(ctx, "jenndebugcommit txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
 
-	func() {
-		if len(txn.writeHotkeys) > 0 || len(txn.readHotkeys) > 0 {
-			txn.mu.Lock()
-			defer txn.mu.Unlock()
-			txn.readResults, txn.mu.deadline = contactHotshard(txn.writeHotkeys, txn.readHotkeys)
-			log.Warningf(ctx, "jenndebugcommit readResults:[%+v]", txn.readResults)
-		}
-	}()
+	// jenndebug by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
+	// we know this is a write-only txn with write hotkeys but no read hotkeys. Otherwise, this
+	// rpc would have fired off in the execution of the SELECT statement.
+	if txn.HasWriteHotkeys() {
+		_, deadline := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), nil)
+		txn.UpdateDeadline(deadline)
+	}
 	// JENNDEBUGMARK I SURE HOPE NOTHING FAILS AFTER THIS
 
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
@@ -756,6 +791,13 @@ func (txn *Txn) UpdateDeadlineMaybe(ctx context.Context, deadline hlc.Timestamp)
 		return true
 	}
 	return false
+}
+
+func (txn *Txn) UpdateDeadline(deadline hlc.Timestamp) {
+	txn.mu.Lock()
+	defer txn.mu.Unlock()
+	txn.mu.deadline = new(hlc.Timestamp)
+	*txn.mu.deadline = deadline
 }
 
 // resetDeadlineLocked resets the deadline.

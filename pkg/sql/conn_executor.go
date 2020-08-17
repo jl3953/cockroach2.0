@@ -12,7 +12,6 @@ package sql
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -920,6 +919,9 @@ type connExecutor struct {
 	transitionCtx  transitionCtx
 	sessionTracing SessionTracing
 
+	result            RestrictedCommandResult
+	shouldStoreResult bool
+
 	// eventLog for SQL statements and other important session events. Will be set
 	// if traceSessionEventLogEnabled; it is used by ex.sessionEventf()
 	eventLog trace.EventLog
@@ -1359,7 +1361,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			"", /* portalName */
 			ex.implicitTxn(),
 		)
-		res = stmtRes
+		res = stmtRes // JENNDEBUGHECK
 		curStmt := Statement{Statement: tcmd.Statement}
 
 		ex.phaseTimes[sessionQueryReceived] = tcmd.TimeReceived
@@ -1533,14 +1535,30 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 				res.SetError(pe.errorCause())
 			}
 		}
-		if resC, ok := res.(CommandResult); ok && ex.state.mu.txn != nil {
-			if readResults, ok := ex.state.mu.txn.GetAndClearHotkeyResults(); ok {
+		// JENNDEBUGMARKHEY
+		/*if resC, ok := res.(CommandResult); ok && ex.state.mu.txn != nil {
+
+			if readResults, ok := ex.state.mu.txn.GetAndClearResultReadHotkeys(); ok {
 				_ = binary.BigEndian.Uint64(readResults[0])
 				_ = binary.BigEndian.Uint64(readResults[1])
 				// resC.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
+
 				log.Warningf(ctx, "jenndebugres, add row before close() res:[%+v], resC:[%+v]", res, resC)
 			}
 		}
+		/*if ex.state.mu.txn != nil {
+			if readResults, ok := ex.state.mu.txn.GetAndClearResultReadHotkeys(); ok {
+				hotkey := binary.BigEndian.Uint64(readResults[0])
+				val := binary.BigEndian.Uint64(readResults[1])
+
+				resC := ex.result
+				resC.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
+				log.Warningf(ctx, "jenndebugcommit, resC:[%+v]", resC)
+				resC.(CommandResult).Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
+
+			}
+		}*/
+
 		res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
 	} else {
 		res.Discard()
