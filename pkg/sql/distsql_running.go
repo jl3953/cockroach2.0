@@ -741,6 +741,7 @@ func (r *DistSQLReceiver) Push(
 	}
 	r.tracing.TraceExecRowsResult(r.ctx, r.row)
 	// Note that AddRow accounts for the memory used by the Datums.
+	log.Warningf(r.ctx, "jenndebugres, r.row:[%+v]", r.row)
 	if commErr := r.resultWriter.AddRow(r.ctx, r.row); commErr != nil {
 		// ErrLimitedResultClosed is not a real error, it is a
 		// signal to stop distsql and return success to the client.

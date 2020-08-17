@@ -24,6 +24,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
+	"reflect"
 )
 
 type completionMsgType int
@@ -175,8 +176,19 @@ func (r *commandResult) SetError(err error) {
 	r.err = err
 }
 
+func (r *commandResult) BufferRow(
+	ctx context.Context,
+	row tree.Datums) {
+
+	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
+}
+
 // AddRow is part of the CommandResult interface.
 func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
+	if len(row) > 1 {
+		log.Warningf(ctx, "jenndebugres datums:[%+v]", reflect.TypeOf(row[1]))
+		log.DumpStacks(ctx)
+	}
 	r.assertNotReleased()
 	if r.err != nil {
 		panic(fmt.Sprintf("can't call AddRow after having set error: %s",
@@ -199,10 +211,6 @@ func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 		_ /* flushed */, err = r.conn.maybeFlush(r.pos)
 	}
 	return err
-}
-
-func (r *commandResult) BufferRow(ctx context.Context, row tree.Datums) {
-	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
 }
 
 // DisableBuffering is part of the CommandResult interface.

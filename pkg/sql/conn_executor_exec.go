@@ -12,6 +12,7 @@ package sql
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"runtime/pprof"
 	"strings"
@@ -834,6 +835,21 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	)
 	if ex.server.cfg.TestingKnobs.AfterExecute != nil {
 		ex.server.cfg.TestingKnobs.AfterExecute(ctx, stmt.String(), res.Err())
+	}
+
+	//jennedebug put result read hotkeys here
+	if ex.state.mu.txn.HasResultReadHotkeys() {
+		hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
+
+		hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
+		log.Warningf(ctx, "jenndebugres, decoded hotkey:[%+v], val:[%+v]", hotkey, hotkeys[1])
+
+		datum := tree.Datums{
+			tree.NewDInt(tree.DInt(hotkey)),
+			tree.NewDBytes(tree.DBytes(hotkeys[1])),
+		}
+		res.(BufferResult).BufferRow(ctx, datum)
+		log.Warningf(ctx, "jenndebugres, datum:[%+v]", datum)
 	}
 
 	return err
