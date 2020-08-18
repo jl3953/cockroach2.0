@@ -156,6 +156,7 @@ func (sr *txnSpanRefresher) SendLocked(
 		ba.Txn.ReadTimestamp.Forward(sr.refreshedTimestamp)
 		ba.Txn.WriteTimestamp.Forward(sr.refreshedTimestamp)
 	} else if sr.refreshedTimestamp != batchReadTimestamp {
+		log.DumpStacks()
 		return nil, roachpb.NewError(errors.AssertionFailedf(
 			"unexpected batch read timestamp: %s. Expected refreshed timestamp: %s. ba: %s. txn: %s",
 			batchReadTimestamp, sr.refreshedTimestamp, ba, ba.Txn))
