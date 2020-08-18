@@ -847,7 +847,7 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 
 		datum := tree.Datums{
 			tree.NewDInt(tree.DInt(hotkey)),
-			tree.NewDInt(tree.DInt(val)),
+			tree.NewDBytes(tree.DBytes(val)),
 		}
 		// res.(BufferResult).BufferRow(ctx, datum)
 		log.Warningf(ctx, "jenndebugres, datum:[%+v]", datum)
