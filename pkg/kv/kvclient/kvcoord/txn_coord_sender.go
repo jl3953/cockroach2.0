@@ -450,6 +450,7 @@ func (tc *TxnCoordSender) commitReadOnlyTxnLocked(
 func (tc *TxnCoordSender) Send(
 	ctx context.Context, ba roachpb.BatchRequest,
 ) (*roachpb.BatchResponse, *roachpb.Error) {
+	log.DumpStacks(ctx)
 	// NOTE: The locking here is unusual. Although it might look like it, we are
 	// NOT holding the lock continuously for the duration of the Send. We lock
 	// here, and unlock at the botton of the interceptor stack, in the
