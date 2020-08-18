@@ -689,7 +689,7 @@ func (txn *Txn) commit(ctx context.Context) error {
 	// rpc would have fired off in the execution of the SELECT statement.
 	if txn.HasWriteHotkeys() {
 		_, deadline := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), nil)
-		txn.UpdateDeadline(deadline)
+		txn.SetFixedTimestamp(ctx, deadline)
 	}
 	// JENNDEBUGMARK I SURE HOPE NOTHING FAILS AFTER THIS
 
