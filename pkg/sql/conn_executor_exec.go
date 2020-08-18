@@ -842,14 +842,13 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 		hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
 		hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
-		val := int(binary.BigEndian.Uint64(hotkeys[1]))
-		log.Warningf(ctx, "jenndebugres, decoded hotkey:[%+v], decoded val:[%+v]", hotkey, val)
+		log.Warningf(ctx, "jenndebugres, decoded hotkey:[%+v], val:[%+v]", hotkey, hotkeys[1])
 
 		datum := tree.Datums{
 			tree.NewDInt(tree.DInt(hotkey)),
-			tree.NewDBytes(tree.DBytes(val)),
+			tree.NewDBytes(tree.DBytes(hotkeys[1])),
 		}
-		// res.(BufferResult).BufferRow(ctx, datum)
+		res.(BufferResult).BufferRow(ctx, datum)
 		log.Warningf(ctx, "jenndebugres, datum:[%+v]", datum)
 	}
 
