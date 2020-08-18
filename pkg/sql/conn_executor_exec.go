@@ -841,8 +841,9 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	if ex.state.mu.txn.HasResultReadHotkeys() {
 		hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
-		hotkey := binary.BigEndian.Uint64(hotkeys[0])
-		val := binary.BigEndian.Uint64(hotkeys[1])
+		hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
+		val := int(binary.BigEndian.Uint64(hotkeys[1]))
+		log.Warningf(ctx, "jenndebugres, decoded hotkey:[%+v], decoded val:[%+v]", hotkey, val)
 
 		res.(BufferResult).BufferRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
 		log.Warningf(ctx, "jenndebugres, added row")
