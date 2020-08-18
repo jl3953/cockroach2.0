@@ -94,6 +94,7 @@ require (
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jaegertracing/jaeger v1.17.0
 	github.com/jcmturner/gofork v1.0.0 // indirect
+	github.com/jl3953/vendored v0.0.0-20200726155200-480583e26250 // indirect
 	github.com/jordanlewis/gcassert v0.0.0-20200706043056-bf61eb72ee48
 	github.com/kevinburke/go-bindata v3.13.0+incompatible
 	github.com/kisielk/errcheck v1.2.0
