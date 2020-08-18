@@ -845,8 +845,9 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 		val := int(binary.BigEndian.Uint64(hotkeys[1]))
 		log.Warningf(ctx, "jenndebugres, decoded hotkey:[%+v], decoded val:[%+v]", hotkey, val)
 
-		res.(BufferResult).BufferRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
-		log.Warningf(ctx, "jenndebugres, added row")
+		datum := tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))}
+		// res.(BufferResult).BufferRow(ctx, datum)
+		log.Warningf(ctx, "jenndebugres, datum:[%+v]", datum)
 	}
 
 	return err
