@@ -185,7 +185,7 @@ func (r *commandResult) BufferRow(
 // AddRow is part of the CommandResult interface.
 func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 	log.Warningf(ctx, "jenndebugres datums:[%+v]", row)
-	log.DumpStacks()
+	log.DumpStacks(ctx)
 	r.assertNotReleased()
 	if r.err != nil {
 		panic(fmt.Sprintf("can't call AddRow after having set error: %s",
