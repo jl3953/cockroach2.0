@@ -427,9 +427,9 @@ func (o *kvOp) run(ctx context.Context) error {
 				return err
 			}
 			empty := true
-			results, _ := rows.Values()
-			log.Warningf(ctx, "jenndebug, results:[%+v]", results)
 			for rows.Next() {
+				results, _ := rows.Values()
+				log.Warningf(ctx, "jenndebug, results:[%+v]", results)
 				empty = false
 			}
 			if empty {
