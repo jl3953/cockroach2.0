@@ -839,7 +839,7 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 
 	//jennedebug put result read hotkeys here
 	if ex.state.mu.txn.HasResultReadHotkeys() {
-		hotkeys := ex.state.mu.txn.GetAndClearWriteHotkeys()
+		hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
 		hotkey := binary.BigEndian.Uint64(hotkeys[0])
 		val := binary.BigEndian.Uint64(hotkeys[1])
