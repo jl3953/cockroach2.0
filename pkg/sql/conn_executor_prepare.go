@@ -414,7 +414,7 @@ func (ex *connExecutor) execBind(
 				ex.state.mu.txn.GetAndClearWriteHotkeys(), ex.state.mu.txn.GetAndClearReadHotkeys())
 
 			ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
-			ex.state.mu.txn.UpdateDeadline(deadline)
+			ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
 			log.Warningf(ctx, "jenndebugrpc, resultReadHotkeys:[%+v], updated deadline:[%+v], txn:[%+v]",
 				hotkeyReadResults, deadline, ex.state.mu.txn)
 		}
