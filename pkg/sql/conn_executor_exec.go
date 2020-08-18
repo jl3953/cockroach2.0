@@ -844,7 +844,7 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 		hotkey := binary.BigEndian.Uint64(hotkeys[0])
 		val := binary.BigEndian.Uint64(hotkeys[1])
 
-		res.AddRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
+		res.(BufferResult).BufferRow(ctx, tree.Datums{tree.NewDInt(tree.DInt(hotkey)), tree.NewDInt(tree.DInt(val))})
 		log.Warningf(ctx, "jenndebugres, added row")
 	}
 

@@ -175,6 +175,13 @@ func (r *commandResult) SetError(err error) {
 	r.err = err
 }
 
+func (r *commandResult) BufferRow(
+	ctx context.Context,
+	row tree.Datums) {
+
+	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
+}
+
 // AddRow is part of the CommandResult interface.
 func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 	r.assertNotReleased()
@@ -199,10 +206,6 @@ func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 		_ /* flushed */, err = r.conn.maybeFlush(r.pos)
 	}
 	return err
-}
-
-func (r *commandResult) BufferRow(ctx context.Context, row tree.Datums) {
-	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
 }
 
 // DisableBuffering is part of the CommandResult interface.

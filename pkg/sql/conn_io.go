@@ -639,6 +639,10 @@ type CommandResult interface {
 	CommandResultClose
 }
 
+type BufferResult interface {
+	BufferRow(context.Context, tree.Datums)
+}
+
 // CommandResultErrBase is the subset of CommandResult dealing with setting a
 // query execution error.
 type CommandResultErrBase interface {
