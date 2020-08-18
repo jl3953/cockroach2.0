@@ -24,6 +24,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/errors"
 	"github.com/lib/pq/oid"
+	"reflect"
 )
 
 type completionMsgType int
@@ -184,7 +185,7 @@ func (r *commandResult) BufferRow(
 
 // AddRow is part of the CommandResult interface.
 func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
-	log.Warningf(ctx, "jenndebugres datums:[%+v]", row)
+	log.Warningf(ctx, "jenndebugres datums:[%+v]", reflect.TypeOf(row[1]))
 	log.DumpStacks(ctx)
 	r.assertNotReleased()
 	if r.err != nil {
