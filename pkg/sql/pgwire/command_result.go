@@ -187,7 +187,6 @@ func (r *commandResult) BufferRow(
 func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 	if len(row) > 1 {
 		log.Warningf(ctx, "jenndebugres datums:[%+v]", reflect.TypeOf(row[1]))
-		log.DumpStacks(ctx)
 	}
 	r.assertNotReleased()
 	if r.err != nil {
