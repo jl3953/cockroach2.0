@@ -675,7 +675,7 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 	readResults[0] = make([]byte, 8)
 	binary.BigEndian.PutUint64(readResults[0], 1994214)
 	readResults[1] = make([]byte, 8)
-	binary.BigEndian.PutUint64(readResults[1], 812)
+	binary.BigEndian.PutUint64(readResults[1], 5)
 
 	return readResults, *deadline
 }
