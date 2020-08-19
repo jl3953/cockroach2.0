@@ -166,6 +166,7 @@ func (r *Replica) updateTimestampCache(
 				end = resp.ResumeSpan.Key
 			}
 			addToTSCache(start, end, ts, txnID)
+			log.Warningf(ctx, "jenndebugtscache, hopefully ReadTimestamp:[%+v]", ts)
 		case *roachpb.ReverseScanRequest:
 			resp := br.Responses[i].GetInner().(*roachpb.ReverseScanResponse)
 			if resp.ResumeSpan != nil {

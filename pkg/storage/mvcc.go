@@ -181,10 +181,10 @@ func updateStatsForInline(
 	// Remove counts for this key if the original size is non-zero.
 	if origMetaKeySize != 0 {
 		if sys {
-			ms.SysBytes -= (origMetaKeySize + origMetaValSize)
+			ms.SysBytes -= origMetaKeySize + origMetaValSize
 			ms.SysCount--
 		} else {
-			ms.LiveBytes -= (origMetaKeySize + origMetaValSize)
+			ms.LiveBytes -= origMetaKeySize + origMetaValSize
 			ms.LiveCount--
 			ms.KeyBytes -= origMetaKeySize
 			ms.ValBytes -= origMetaValSize
@@ -295,7 +295,7 @@ func updateStatsOnPut(
 		if orig.Txn != nil {
 			// Subtract counts attributable to intent we're replacing.
 			ms.ValCount--
-			ms.IntentBytes -= (orig.KeyBytes + orig.ValBytes)
+			ms.IntentBytes -= orig.KeyBytes + orig.ValBytes
 			ms.IntentCount--
 		}
 
@@ -567,12 +567,12 @@ func updateStatsOnClear(
 		ms.LiveBytes -= (orig.KeyBytes + orig.ValBytes) + (origMetaKeySize + origMetaValSize)
 		ms.LiveCount--
 	}
-	ms.KeyBytes -= (orig.KeyBytes + origMetaKeySize)
-	ms.ValBytes -= (orig.ValBytes + origMetaValSize)
+	ms.KeyBytes -= orig.KeyBytes + origMetaKeySize
+	ms.ValBytes -= orig.ValBytes + origMetaValSize
 	ms.KeyCount--
 	ms.ValCount--
 	if orig.Txn != nil {
-		ms.IntentBytes -= (orig.KeyBytes + orig.ValBytes)
+		ms.IntentBytes -= orig.KeyBytes + orig.ValBytes
 		ms.IntentCount--
 	}
 
@@ -595,7 +595,7 @@ func updateStatsOnGC(
 	var ms enginepb.MVCCStats
 
 	if isSysLocal(key) {
-		ms.SysBytes -= (keySize + valSize)
+		ms.SysBytes -= keySize + valSize
 		if meta != nil {
 			ms.SysCount--
 		}
@@ -2786,6 +2786,7 @@ func mvccResolveWriteIntent(
 	inProgress := !intent.Status.IsFinalized() && meta.Txn.Epoch >= intent.Txn.Epoch
 	pushed := inProgress && hlc.Timestamp(meta.Timestamp).Less(intent.Txn.WriteTimestamp)
 	latestKey := MVCCKey{Key: intent.Key, Timestamp: hlc.Timestamp(meta.Timestamp)}
+	log.Warningf(ctx, "jenndebugmvcc WriteTimestamp:[%+v]", intent.Txn.WriteTimestamp)
 
 	// Handle partial txn rollbacks. If the current txn sequence
 	// is part of a rolled back (ignored) seqnum range, we're going
