@@ -16,16 +16,6 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
-	"github.com/cockroachdb/cockroach/pkg/util/log"
-	"hash"
-	"math"
-	// "math/rand"
-	"sort"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"time" // jenndebug hot
-
 	"github.com/cockroachdb/cockroach-go/crdb"
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/cockroach/pkg/workload"
@@ -34,6 +24,12 @@ import (
 	"github.com/cockroachdb/errors"
 	"github.com/jackc/pgx"
 	"github.com/spf13/pflag"
+	"hash"
+	"math"
+	"sort"
+	"strconv"
+	"strings"
+	"sync/atomic"
 
 	"golang.org/x/exp/rand"
 )
@@ -366,7 +362,7 @@ func (s byInt) Swap(i, j int) {
 
 func (s byInt) Less(i, j int) bool {
 	return s[i] < s[j]
-	// reverse jenndebug
+	// reverse
 	// return s[i] > s[j]
 }
 
@@ -374,14 +370,14 @@ type generateKeyFunc func() int64
 
 func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey int64) []int64 {
 
-	// jenndebug sort the keys first
+	// sort the keys first
 	argsInt := make([]int64, batchSize)
 	for i := 0; i < batchSize; i++ {
 		argsInt[i] = generateKey()
 	}
 	sort.Sort(byInt(argsInt))
 
-	//jenndebug hot replacing hot keys
+	//replacing hot keys
 	for i := 0; i < len(argsInt); i++ {
 		if argsInt[i] <= greatestHotKey {
 			argsInt[i] = argsInt[0]
@@ -389,8 +385,6 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 	}
 	sort.Sort(byInt(argsInt))
 
-	argsInt[0] = 1994214
-	log.Warningf(context.Background(), "jenndebugread argsInt:[%+v]", argsInt)
 	return argsInt
 }
 
@@ -401,10 +395,10 @@ func (o *kvOp) run(ctx context.Context) error {
 
 		argsInt := correctTxnParams(o.config.batchSize, o.g.readKey, o.config.hotkey)
 
-		if argsInt[0] <= o.config.hotkey { //jenndebug hot
+		/* if argsInt[0] <= o.config.hotkey { //jenndebug hot
 			o.hists.Get(`read`).Record(0 * time.Millisecond)
 			return nil
-		}
+		}*/
 
 		args := make([]interface{}, o.config.batchSize)
 		for i := 0; i < o.config.batchSize; i++ {
@@ -416,7 +410,6 @@ func (o *kvOp) run(ctx context.Context) error {
 			IsoLevel:   pgx.Serializable,
 			AccessMode: pgx.ReadOnly})
 
-		// jenndebug rows, err := o.readStmt.Query(ctx, args...)
 		if err != nil {
 			return err
 		}
@@ -428,8 +421,6 @@ func (o *kvOp) run(ctx context.Context) error {
 			}
 			empty := true
 			for rows.Next() {
-				results, _ := rows.Values()
-				log.Warningf(ctx, "jenndebug, results:[%+v]", results)
 				empty = false
 			}
 			if empty {
@@ -459,19 +450,17 @@ func (o *kvOp) run(ctx context.Context) error {
 
 	argsInt := correctTxnParams(o.config.batchSize, o.g.writeKey, o.config.hotkey)
 
-	if argsInt[0] <= o.config.hotkey { //jenndebug hot
+	/* if argsInt[0] <= o.config.hotkey { //jenndebug hot
 		o.hists.Get(`write`).Record(0 * time.Millisecond)
 		return nil
-	}
+	}*/
 
 	args := make([]interface{}, argCount*o.config.batchSize)
-	byteBuf := make([]byte, 8)
-	binary.BigEndian.PutUint64(byteBuf, 214)
 	for i := 0; i < o.config.batchSize; i++ {
 		j := i * argCount
 		args[j+0] = argsInt[i]
-		args[j+1] = byteBuf //randomBlock(o.config, o.g.rand())
-	} //jenndebug
+		args[j+1] = randomBlock(o.config, o.g.rand())
+	}
 
 	tx, err := o.mcp.Get().BeginEx(ctx, &pgx.TxOptions{
 		IsoLevel:   pgx.Serializable,
