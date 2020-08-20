@@ -106,7 +106,6 @@ func (ex *connExecutor) execStmt(
 				ev, payload, err = ex.execStmtInOpenState(ctx, stmt, res, pinfo)
 			})
 		} else {
-			log.Warningf(ctx, "jenndebugtxn stateOpen else")
 			ev, payload, err = ex.execStmtInOpenState(ctx, stmt, res, pinfo)
 		}
 		switch ev.(type) {
@@ -779,7 +778,7 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	if err := ex.initStatementResult(ctx, res, stmt, cols); err != nil {
 		res.SetError(err)
 		return nil
-	} // JENNDEBUGMARKHECK
+	}
 
 	ex.sessionTracing.TracePlanCheckStart(ctx)
 	distributePlan := getPlanDistribution(
@@ -842,14 +841,12 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 		hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
 		hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
-		log.Warningf(ctx, "jenndebugres, decoded hotkey:[%+v], val:[%+v]", hotkey, hotkeys[1])
 
 		datum := tree.Datums{
 			tree.NewDInt(tree.DInt(hotkey)),
 			tree.NewDBytes(tree.DBytes(hotkeys[1])),
 		}
 		res.(BufferResult).BufferRow(ctx, datum)
-		log.Warningf(ctx, "jenndebugres, datum:[%+v]", datum)
 	}
 
 	return err

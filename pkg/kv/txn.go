@@ -660,38 +660,39 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 	name := defaultName
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	_, err = c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
 		log.Fatalf(context.Background(), "jenndebugrpc could not greet, err:[%v]", err)
 	}
 
+	// JENNDEBUG TODO filling in fake deadline
 	deadline := new(hlc.Timestamp)
 	clock := hlc.NewClock(hlc.UnixNano, 1)
 	*deadline = clock.Now()
-	log.Warningf(context.Background(), "jenndebugrpc, response:[%+v], writeHotkeys:[%+v], readHotkeys:[%+v], deadline:[%+v]",
-		r, writeHotkeys, readHotkeys, *deadline)
 
-	readResults := make([][]byte, 2)
-	readResults[0] = make([]byte, 8)
-	binary.BigEndian.PutUint64(readResults[0], 1994214)
-	readResults[1] = make([]byte, 8)
-	binary.BigEndian.PutUint64(readResults[1], 5)
+	readResults := make([][]byte, 0)
+
+	// JENNDEBUG TODO filling in fake results
+	for _, readHotkey := range readHotkeys {
+		result := make([]byte, 8)
+		binary.BigEndian.PutUint64(result, 214)
+
+		readResults = append(readResults, readHotkey, result)
+	}
 
 	return readResults, *deadline
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
-	log.Warningf(ctx, "jenndebugcommit txn:[%+v], ctx:[%+v]", txn, ctx)
 	var ba roachpb.BatchRequest
 
-	// jenndebug by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
+	// by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
 	// we know this is a write-only txn with write hotkeys but no read hotkeys. Otherwise, this
 	// rpc would have fired off in the execution of the SELECT statement.
 	if txn.HasWriteHotkeys() {
 		_, deadline := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), nil)
 		txn.SetFixedTimestamp(ctx, deadline)
 	}
-	// JENNDEBUGMARK I SURE HOPE NOTHING FAILS AFTER THIS
 
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))
 	_, pErr := txn.Send(ctx, ba)
