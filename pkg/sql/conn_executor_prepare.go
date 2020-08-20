@@ -260,16 +260,7 @@ func isHotkey(key []byte) bool {
 
 	// We're just...hardcoding some hotkeys here
 	hotkeys := make([]uint64, 0)
-	hotkeys = append(hotkeys, 1994214)
-
-	/**hotkeysBytes := convertHotkeysToBytes(hotkeys)
-	log.Warningf(context.Background(), "jenndebughot, hotkeys:[%+v], hotkeysBytes:[%+v], key:[%+v]", hotkeys, hotkeysBytes, key)
-
-	for _, hotkeyByte := range hotkeysBytes {
-		if bytes.Equal(key, hotkeyByte) {
-			return true
-		}
-	}*/
+	hotkeys = append(hotkeys, 0)
 
 	keyInt := binary.BigEndian.Uint64(key)
 	for _, hotkey := range hotkeys {
@@ -364,59 +355,47 @@ func (ex *connExecutor) execBind(
 			"unknown prepared statement %q", bindCmd.PreparedStatementName))
 	}
 
-	// JENNDEBUGMARK write-only txns stripped keys
-	log.Warningf(ctx, "jenndebugtxn stripped keys, ctx:[%+v]", ctx)
-
+	// write-only txns stripped keys
 	if bindCmd.PreparedStatementName == "kv-2" {
-		// jenndebug extracting any write hotkeys
+		// extracting any write hotkeys
 
 		var hotkeys, warmArgs [][]byte
 		var hasWarmKeys bool
 		if hotkeys, warmArgs, hasWarmKeys = stripHotkeysWrite(bindCmd); hasWarmKeys {
 			extendedWarmArgs := extendWarmArgsWrite(warmArgs, len(hotkeys))
-			log.Warningf(ctx, "jenndebugwrite hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
 			bindCmd.Args = extendedWarmArgs
 		} else {
-			log.Warningf(ctx, "jenndebugwrite hotkeys:[%+v], no warmArgs", hotkeys)
 			ps.AST = nil
 		}
 
 		if len(hotkeys) > 0 {
 			ex.state.mu.txn.AddWriteHotkeys(hotkeys)
-			log.Warningf(ctx, "jenndebugwrite ex.state.mu.txn:[%+v]", ex.state.mu.txn)
 		}
 
 	} else if bindCmd.PreparedStatementName == "kv-1" {
 
-		// jenndebug extracting any read hotkeys
+		// extracting any read hotkeys
 		var hotkeys, warmArgs [][]byte
 		var hasWarmKeys bool
 
 		if hotkeys, warmArgs, hasWarmKeys = stripHotkeysRead(bindCmd); hasWarmKeys {
 			extendedWarmArgs := extendWarmArgsRead(warmArgs, len(hotkeys))
-			log.Warningf(ctx, "jenndebugread hotkeys:[%+v], warmArgs:[%+v], extendedWarmArgs:[%+v]", hotkeys, warmArgs, extendedWarmArgs)
 			bindCmd.Args = extendedWarmArgs
 		} else {
-			log.Warningf(ctx, "jenndebugread hotkeys:[%+v], no warmArgs", hotkeys)
 			ps.AST = nil
 		}
 
 		if len(hotkeys) > 0 {
 			ex.state.mu.txn.AddReadHotkeys(hotkeys)
-			log.Warningf(ctx, "jenndebugread ex.state.mu.txn:[%+v]", ex.state.mu.txn)
 		}
 
-		// jenndebug sending RPC query
+		// sending RPC query
 		if ex.state.mu.txn.HasWriteHotkeys() || ex.state.mu.txn.HasReadHotkeys() {
-			log.Warningf(ctx, "jenndebugrpc, ex.state.mu.txn.HasWriteHotkeys():[%+v], ex.state.mu.txn.HasReadHotkeys():[%+v]",
-				ex.state.mu.txn.HasWriteHotkeys(), ex.state.mu.txn.HasReadHotkeys())
 			hotkeyReadResults, deadline := ex.state.mu.txn.ContactHotshard(
 				ex.state.mu.txn.GetAndClearWriteHotkeys(), ex.state.mu.txn.GetAndClearReadHotkeys())
 
 			ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
 			ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
-			log.Warningf(ctx, "jenndebugrpc, resultReadHotkeys:[%+v], updated deadline:[%+v], txn:[%+v]",
-				hotkeyReadResults, deadline, ex.state.mu.txn)
 		}
 	}
 
