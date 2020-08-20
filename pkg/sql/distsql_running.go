@@ -46,7 +46,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/util/tracing"
 	"github.com/cockroachdb/cockroach/pkg/util/uuid"
 	"github.com/cockroachdb/errors"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 )
 
 // To allow queries to send out flow RPCs in parallel, we use a pool of workers
@@ -741,7 +741,6 @@ func (r *DistSQLReceiver) Push(
 	}
 	r.tracing.TraceExecRowsResult(r.ctx, r.row)
 	// Note that AddRow accounts for the memory used by the Datums.
-	log.Warningf(r.ctx, "jenndebugres, r.row:[%+v]", r.row)
 	if commErr := r.resultWriter.AddRow(r.ctx, r.row); commErr != nil {
 		// ErrLimitedResultClosed is not a real error, it is a
 		// signal to stop distsql and return success to the client.
