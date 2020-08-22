@@ -502,6 +502,7 @@ func (tc *TxnCoordSender) Send(
 
 	// Send the command through the txnInterceptor stack.
 	br, pErr := tc.interceptorStack[0].SendLocked(ctx, ba)
+	log.Warning(ctx, "jenndebug welp sent")
 
 	pErr = tc.updateStateLocked(ctx, ba, br, pErr)
 
