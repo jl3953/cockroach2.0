@@ -12,7 +12,10 @@ package sql
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/sql/lex"
+	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgwirebase"
 	"io"
 	"math"
 	"strings"
@@ -1388,6 +1391,35 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		}
 		if portal.Stmt.AST == nil {
 			res = ex.clientComm.CreateEmptyQueryResult(pos)
+
+			// jenndebug populate
+			if ex.state.mu.txn.HasResultReadHotkeys() {
+				hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
+
+				for i := 0; i < len(hotkeys); i += 2 {
+					key := binary.BigEndian.Uint64(hotkeys[i])
+					val := hotkeys[i+1]
+
+					data := tree.Datums{
+						tree.NewDInt(tree.DInt(key)),
+						tree.NewDBytes(tree.DBytes(val)),
+					}
+
+					formatCodes := make([]pgwirebase.FormatCode, 2)
+					formatCodes = append(formatCodes, pgwirebase.FormatBinary, pgwirebase.FormatBinary)
+
+					conv := sessiondata.DataConversionConfig{
+						Location:          time.UTC,
+						BytesEncodeFormat: lex.BytesEncodeHex,
+						ExtraFloatDigits:  0,
+					}
+
+					dataTypes := make([]*types.T, 2)
+					dataTypes = append(dataTypes, types.Int, types.Bytes)
+
+					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
+				}
+			}
 			break
 		}
 

@@ -13,6 +13,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"io"
 	"sync"
 	"time"
@@ -641,6 +642,7 @@ type CommandResult interface {
 
 type BufferResult interface {
 	BufferRow(context.Context, tree.Datums)
+	BufferRowRaw(context.Context, tree.Datums, []pgwirebase.FormatCode, sessiondata.DataConversionConfig, []*types.T)
 }
 
 // CommandResultErrBase is the subset of CommandResult dealing with setting a
