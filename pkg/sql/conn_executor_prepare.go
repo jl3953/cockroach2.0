@@ -329,7 +329,7 @@ func extendWarmArgsWrite(warmArgs [][]byte, byHowMuch int) [][]byte {
 }
 
 func (ex *connExecutor) execBind(
-	ctx context.Context, bindCmd BindStmt,
+	ctx context.Context, bindCmd BindStmt, res BindResult,
 ) (fsm.Event, fsm.EventPayload) {
 
 	retErr := func(err error) (fsm.Event, fsm.EventPayload) {
@@ -396,6 +396,19 @@ func (ex *connExecutor) execBind(
 
 			ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
 			ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
+		}
+
+		if ps.AST == nil && ex.state.mu.txn.HasReadHotkeys() {
+			hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
+
+			hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
+			log.Warningf(ctx, "jenndebug wtf")
+
+			datum := tree.Datums{
+				tree.NewDInt(tree.DInt(hotkey)),
+				tree.NewDBytes(tree.DBytes(hotkeys[1])),
+			}
+			res.(BufferResult).BufferRow(ctx, datum)
 		}
 	}
 

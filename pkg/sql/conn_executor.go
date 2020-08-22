@@ -1369,6 +1369,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 		stmtCtx := withStatement(ctx, ex.curStmt)
 		ev, payload, err = ex.execStmt(stmtCtx, curStmt, stmtRes, nil /* pinfo */)
+
 		if err != nil {
 			return err
 		}
@@ -1445,7 +1446,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		ev, payload = ex.execDescribe(ctx, tcmd, descRes)
 	case BindStmt:
 		res = ex.clientComm.CreateBindResult(pos)
-		ev, payload = ex.execBind(ctx, tcmd)
+		ev, payload = ex.execBind(ctx, tcmd, res)
 	case DeletePreparedStmt:
 		res = ex.clientComm.CreateDeleteResult(pos)
 		ev, payload = ex.execDelPrepStmt(ctx, tcmd)
