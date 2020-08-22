@@ -12,6 +12,7 @@ package sql
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
@@ -1388,6 +1389,23 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		}
 		if portal.Stmt.AST == nil {
 			res = ex.clientComm.CreateEmptyQueryResult(pos)
+
+			// writing out hotkeys
+			if ex.state.mu.txn.HasResultReadHotkeys() {
+				hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
+
+				for i := 0; i < len(hotkeys); i += 2 {
+					hotkey := int(binary.BigEndian.Uint64(hotkeys[i]))
+					log.Warningf(ctx, "jenndebug wtf")
+
+					datum := tree.Datums{
+						tree.NewDInt(tree.DInt(hotkey)),
+						tree.NewDBytes(tree.DBytes(hotkeys[i+1])),
+					}
+					res.(BufferResult).BufferRow(ctx, datum)
+				}
+			}
+
 			break
 		}
 
@@ -1435,6 +1453,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
 	case PrepareStmt:
 		ex.curStmt = tcmd.AST
 		res = ex.clientComm.CreatePrepareResult(pos)
