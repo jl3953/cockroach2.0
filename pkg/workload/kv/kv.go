@@ -421,11 +421,13 @@ func (o *kvOp) run(ctx context.Context) error {
 				return err
 			}
 			empty := true
+			log.Warningf(ctx, "jenndebugkv query came back")
 			for rows.Next() {
 				val, _ := rows.Values()
 				log.Warningf(ctx, "jenndebugkv val:[%+v]", val)
 				empty = false
 			}
+			log.Warningf(ctx, "jenndebug not hanging on rows.Next()")
 			if empty {
 				atomic.AddInt64(o.numEmptyResults, 1)
 			}
@@ -435,6 +437,7 @@ func (o *kvOp) run(ctx context.Context) error {
 			rows.Close()
 			return nil
 		})
+		log.Warningf(ctx, "jenndebugkv recording elapsed")
 		elapsed := timeutil.Since(start)
 		o.hists.Get(`read`).Record(elapsed)
 		return err
