@@ -17,6 +17,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/cockroachdb/cockroach-go/crdb"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/cockroach/pkg/workload"
 	"github.com/cockroachdb/cockroach/pkg/workload/histogram"
@@ -421,6 +422,8 @@ func (o *kvOp) run(ctx context.Context) error {
 			}
 			empty := true
 			for rows.Next() {
+				val, _ := rows.Values()
+				log.Warningf(ctx, "jenndebugkv val:[%+v]", val)
 				empty = false
 			}
 			if empty {
