@@ -402,6 +402,7 @@ func (ex *connExecutor) execBind(
 			hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
 			hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
+			log.Warningf(ctx, "jenndebug wtf")
 
 			datum := tree.Datums{
 				tree.NewDInt(tree.DInt(hotkey)),
