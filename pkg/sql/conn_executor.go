@@ -1396,6 +1396,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 			// jenndebug populate
 			if ex.state.mu.txn.HasResultReadHotkeys() {
+				log.Warningf(ctx, "jenndebug populate ctx:[%+v]", ctx)
 				hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
 				for i := 0; i < len(hotkeys); i += 2 {
