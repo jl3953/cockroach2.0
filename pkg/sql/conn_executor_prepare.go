@@ -382,7 +382,7 @@ func (ex *connExecutor) execBind(
 			extendedWarmArgs := extendWarmArgsRead(warmArgs, len(hotkeys))
 			bindCmd.Args = extendedWarmArgs
 		} else {
-			ps.AST = nil
+			// ps.AST = nil
 		}
 
 		if len(hotkeys) > 0 {
@@ -398,7 +398,7 @@ func (ex *connExecutor) execBind(
 			ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
 		}
 
-		if ps.AST == nil && ex.state.mu.txn.HasReadHotkeys() {
+		/* if ps.AST == nil && ex.state.mu.txn.HasReadHotkeys() {
 			hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
 			hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
@@ -409,7 +409,7 @@ func (ex *connExecutor) execBind(
 				tree.NewDBytes(tree.DBytes(hotkeys[1])),
 			}
 			res.(BufferResult).BufferRow(ctx, datum)
-		}
+		}*/
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
