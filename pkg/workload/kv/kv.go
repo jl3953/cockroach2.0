@@ -17,6 +17,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/cockroachdb/cockroach-go/crdb"
+	"github.com/cockroachdb/cockroach/pkg/util/log"
 	"github.com/cockroachdb/cockroach/pkg/util/timeutil"
 	"github.com/cockroachdb/cockroach/pkg/workload"
 	"github.com/cockroachdb/cockroach/pkg/workload/histogram"
@@ -420,10 +421,12 @@ func (o *kvOp) run(ctx context.Context) error {
 				return err
 			}
 			empty := true
+			log.Warningf(ctx, "jenndebugkv query came back")
 			for rows.Next() {
 				// val, _ := rows.Values()
 				empty = false
 			}
+			log.Warningf(ctx, "jenndebug not hanging on rows.Next()")
 			if empty {
 				atomic.AddInt64(o.numEmptyResults, 1)
 			}
@@ -433,6 +436,7 @@ func (o *kvOp) run(ctx context.Context) error {
 			rows.Close()
 			return nil
 		})
+		log.Warningf(ctx, "jenndebugkv recording elapsed")
 		elapsed := timeutil.Since(start)
 		o.hists.Get(`read`).Record(elapsed)
 		return err
