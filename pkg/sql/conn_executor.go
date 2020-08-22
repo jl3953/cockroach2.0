@@ -1422,6 +1422,8 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
 				}
+
+				ex.handleAutoCommit(ctx, nil)
 			}
 			break
 		}
