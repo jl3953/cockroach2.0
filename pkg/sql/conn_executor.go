@@ -1405,7 +1405,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 						tree.NewDBytes(tree.DBytes(val)),
 					}
 
-					formatCodes := make([]pgwirebase.FormatCode, 2)
+					formatCodes := make([]pgwirebase.FormatCode, 0)
 					formatCodes = append(formatCodes, pgwirebase.FormatBinary, pgwirebase.FormatBinary)
 
 					conv := sessiondata.DataConversionConfig{
@@ -1414,7 +1414,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 						ExtraFloatDigits:  0,
 					}
 
-					dataTypes := make([]*types.T, 2)
+					dataTypes := make([]*types.T, 0)
 					dataTypes = append(dataTypes, types.Int, types.Bytes)
 
 					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
