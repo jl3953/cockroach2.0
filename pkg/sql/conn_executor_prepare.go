@@ -372,7 +372,7 @@ func (ex *connExecutor) execBind(
 			extendedWarmArgs := extendWarmArgsRead(warmArgs, len(hotkeys))
 			bindCmd.Args = extendedWarmArgs
 		} else {
-			//ps.AST = nil
+			ps.AST = nil
 			log.Warningf(ctx, "jenndebugbelieve read nothing")
 		}
 
