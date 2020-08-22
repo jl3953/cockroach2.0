@@ -1423,7 +1423,8 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
 				}
 
-				ex.handleAutoCommit(ctx, nil)
+				ex.handleAutoCommit(ctx, nil) // jenndebug this'll come back to haunt my ass
+				res = ex.clientComm.CreateSyncResult(pos)
 			}
 			break
 		}
