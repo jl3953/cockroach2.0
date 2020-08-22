@@ -13,6 +13,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/sql/types"
 	"io"
 	"sync"
 	"time"
@@ -566,6 +567,10 @@ const (
 	DontNeedRowDesc RowDescOpt = true
 )
 
+type ClientCommRaw interface {
+	CreateNewMiscResult(pos CmdPos) CommandResult
+}
+
 // ClientComm is the interface used by the connExecutor for creating results to
 // be communicated to client and for exerting some control over this
 // communication.
@@ -641,6 +646,7 @@ type CommandResult interface {
 
 type BufferResult interface {
 	BufferRow(context.Context, tree.Datums)
+	BufferRowRaw(context.Context, tree.Datums, []pgwirebase.FormatCode, sessiondata.DataConversionConfig, []*types.T)
 }
 
 // CommandResultErrBase is the subset of CommandResult dealing with setting a

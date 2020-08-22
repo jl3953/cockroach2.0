@@ -1099,6 +1099,7 @@ func (c *conn) bufferRow(
 	conv sessiondata.DataConversionConfig,
 	types []*types.T,
 ) {
+	log.Warningf(ctx, "jenndebug formatCodes:[%+v], conv:[%+v], types:[%+v]", formatCodes, conv, types)
 	c.msgBuilder.initMsg(pgwirebase.ServerMsgDataRow)
 	c.msgBuilder.putInt16(int16(len(row)))
 	for i, col := range row {
@@ -1369,6 +1370,10 @@ func (cl *clientConnLock) RTrim(ctx context.Context, pos sql.CmdPos) {
 			delete(cl.cmdStarts, p)
 		}
 	}
+}
+
+func (c *conn) CreateNewMiscResult(pos sql.CmdPos) sql.CommandResult {
+	return c.newMiscResult(pos, commandComplete)
 }
 
 // CreateStatementResult is part of the sql.ClientComm interface.
