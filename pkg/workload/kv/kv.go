@@ -427,6 +427,7 @@ func (o *kvOp) run(ctx context.Context) error {
 				log.Warningf(ctx, "jenndebugkv val:[%+v]", val)
 				empty = false
 			}
+			log.Warningf(ctx, "jenndebug not hanging on rows.Next()")
 			if empty {
 				atomic.AddInt64(o.numEmptyResults, 1)
 			}
