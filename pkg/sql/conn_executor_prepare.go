@@ -246,16 +246,6 @@ func (ex *connExecutor) populatePrepared(
 	return flags, nil
 }
 
-func convertHotkeysToBytes(hotkeys []interface{}) (result [][]byte) {
-
-	result = make([][]byte, len(hotkeys))
-	for i, hotkey := range hotkeys {
-		binary.BigEndian.PutUint64(result[i], hotkey.(uint64))
-	}
-
-	return result
-}
-
 func isHotkey(key []byte) bool {
 
 	// We're just...hardcoding some hotkeys here
@@ -382,7 +372,7 @@ func (ex *connExecutor) execBind(
 			extendedWarmArgs := extendWarmArgsRead(warmArgs, len(hotkeys))
 			bindCmd.Args = extendedWarmArgs
 		} else {
-			// ps.AST = nil
+			ps.AST = nil
 		}
 
 		if len(hotkeys) > 0 {
