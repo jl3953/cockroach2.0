@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	"runtime/debug"
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
@@ -685,7 +686,7 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 
 func (txn *Txn) commit(ctx context.Context) error {
 	log.Warningf(ctx, "jenndebug COMMIT ctx:[%+v]", ctx)
-	log.DumpStacks(ctx)
+	debug.PrintStack()
 	var ba roachpb.BatchRequest
 
 	// by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
