@@ -684,6 +684,7 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
+	log.Warningf(ctx, "jenndebug COMMIT")
 	var ba roachpb.BatchRequest
 
 	// by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
