@@ -12,7 +12,10 @@ package sql
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/sql/lex"
+	"github.com/cockroachdb/cockroach/pkg/sql/pgwire/pgwirebase"
 	"io"
 	"math"
 	"strings"
@@ -1344,6 +1347,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 	switch tcmd := cmd.(type) {
 	case ExecStmt:
+		log.Warningf(ctx, "jenndebugtype ExecStmt")
 		if tcmd.AST == nil {
 			res = ex.clientComm.CreateEmptyQueryResult(pos)
 			break
@@ -1377,6 +1381,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		// ExecPortal is handled like ExecStmt, except that the placeholder info
 		// is taken from the portal.
 
+		log.Warningf(ctx, "jenndebugtype ExecPortal")
 		portal, ok := ex.extraTxnState.prepStmtsNamespace.portals[tcmd.Name]
 		if !ok {
 			err := pgerror.Newf(
@@ -1388,6 +1393,42 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		}
 		if portal.Stmt.AST == nil {
 			res = ex.clientComm.CreateEmptyQueryResult(pos)
+
+			// jenndebug populate
+			if ex.state.mu.txn.HasResultReadHotkeys() {
+				log.Warningf(ctx, "jenndebug populate ctx:[%+v]", ctx)
+				hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
+
+				for i := 0; i < len(hotkeys); i += 2 {
+					key := binary.BigEndian.Uint64(hotkeys[i])
+					val := hotkeys[i+1]
+
+					data := tree.Datums{
+						tree.NewDInt(tree.DInt(key)),
+						tree.NewDBytes(tree.DBytes(val)),
+					}
+
+					formatCodes := make([]pgwirebase.FormatCode, 0)
+					formatCodes = append(formatCodes, pgwirebase.FormatBinary, pgwirebase.FormatBinary)
+
+					conv := sessiondata.DataConversionConfig{
+						Location:          time.UTC,
+						BytesEncodeFormat: lex.BytesEncodeHex,
+						ExtraFloatDigits:  0,
+					}
+
+					dataTypes := make([]*types.T, 0)
+					dataTypes = append(dataTypes, types.Int, types.Bytes)
+
+					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
+				}
+
+				// ex.handleAutoCommit(ctx, nil) // jenndebug this'll come back to haunt my ass
+
+				res = ex.clientComm.(ClientCommRaw).CreateNewMiscResult(pos)
+				// res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
+
+			}
 			break
 		}
 
@@ -1435,26 +1476,33 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
 	case PrepareStmt:
+		log.Warningf(ctx, "jenndebugtype PrepareStmt")
 		ex.curStmt = tcmd.AST
 		res = ex.clientComm.CreatePrepareResult(pos)
 		stmtCtx := withStatement(ctx, ex.curStmt)
 		ev, payload = ex.execPrepare(stmtCtx, tcmd)
 	case DescribeStmt:
+		log.Warningf(ctx, "jenndebugtype DescribeStmt")
 		descRes := ex.clientComm.CreateDescribeResult(pos)
 		res = descRes
 		ev, payload = ex.execDescribe(ctx, tcmd, descRes)
 	case BindStmt:
+		log.Warningf(ctx, "jenndebugtype BindStmt")
 		res = ex.clientComm.CreateBindResult(pos)
 		ev, payload = ex.execBind(ctx, tcmd, res)
 	case DeletePreparedStmt:
+		log.Warningf(ctx, "jenndebugtype, DeletePreparedStmt")
 		res = ex.clientComm.CreateDeleteResult(pos)
 		ev, payload = ex.execDelPrepStmt(ctx, tcmd)
 	case SendError:
+		log.Warningf(ctx, "jenndebugtype, SendError")
 		res = ex.clientComm.CreateErrorResult(pos)
 		ev = eventNonRetriableErr{IsCommit: fsm.False}
 		payload = eventNonRetriableErrPayload{err: tcmd.Err}
 	case Sync:
+		log.Warningf(ctx, "jenndebugtype, Sync")
 		// Note that the Sync result will flush results to the network connection.
 		res = ex.clientComm.CreateSyncResult(pos)
 		if ex.draining {
@@ -1470,6 +1518,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			}
 		}
 	case CopyIn:
+		log.Warningf(ctx, "jenndebugtype, CopyIn")
 		res = ex.clientComm.CreateCopyInResult(pos)
 		var err error
 		ev, payload, err = ex.execCopyIn(ctx, tcmd)
@@ -1477,6 +1526,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			return err
 		}
 	case DrainRequest:
+		log.Warningf(ctx, "jenndebugtype, DrainRequest")
 		// We received a drain request. We terminate immediately if we're not in a
 		// transaction. If we are in a transaction, we'll finish as soon as a Sync
 		// command (i.e. the end of a batch) is processed outside of a
@@ -1487,9 +1537,11 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 			return errDrainingComplete
 		}
 	case Flush:
+		log.Warningf(ctx, "jenndebugtype, Flush")
 		// Closing the res will flush the connection's buffer.
 		res = ex.clientComm.CreateFlushResult(pos)
 	default:
+		log.Warningf(ctx, "jenndebugtype, default")
 		panic(fmt.Sprintf("unsupported command type: %T", cmd))
 	}
 

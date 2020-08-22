@@ -173,6 +173,16 @@ func (r *commandResult) BufferRow(
 	r.conn.bufferRow(ctx, row, r.formatCodes, r.conv, r.types)
 }
 
+func (r *commandResult) BufferRowRaw(
+	ctx context.Context,
+	row tree.Datums,
+	formatCodes []pgwirebase.FormatCode,
+	conv sessiondata.DataConversionConfig,
+	types []*types.T) {
+
+	r.conn.bufferRow(ctx, row, formatCodes, conv, types)
+}
+
 // AddRow is part of the CommandResult interface.
 func (r *commandResult) AddRow(ctx context.Context, row tree.Datums) error {
 	if len(row) > 1 {

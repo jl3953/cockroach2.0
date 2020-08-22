@@ -246,16 +246,6 @@ func (ex *connExecutor) populatePrepared(
 	return flags, nil
 }
 
-func convertHotkeysToBytes(hotkeys []interface{}) (result [][]byte) {
-
-	result = make([][]byte, len(hotkeys))
-	for i, hotkey := range hotkeys {
-		binary.BigEndian.PutUint64(result[i], hotkey.(uint64))
-	}
-
-	return result
-}
-
 func isHotkey(key []byte) bool {
 
 	// We're just...hardcoding some hotkeys here
@@ -382,7 +372,8 @@ func (ex *connExecutor) execBind(
 			extendedWarmArgs := extendWarmArgsRead(warmArgs, len(hotkeys))
 			bindCmd.Args = extendedWarmArgs
 		} else {
-			// ps.AST = nil
+			ps.AST = nil
+			log.Warningf(ctx, "jenndebugbelieve read nothing, ctx:[%+v]", ctx)
 		}
 
 		if len(hotkeys) > 0 {
@@ -397,19 +388,6 @@ func (ex *connExecutor) execBind(
 			ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
 			ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
 		}
-
-		/* if ps.AST == nil && ex.state.mu.txn.HasReadHotkeys() {
-			hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
-
-			hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
-			log.Warningf(ctx, "jenndebug wtf")
-
-			datum := tree.Datums{
-				tree.NewDInt(tree.DInt(hotkey)),
-				tree.NewDBytes(tree.DBytes(hotkeys[1])),
-			}
-			res.(BufferResult).BufferRow(ctx, datum)
-		}*/
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
