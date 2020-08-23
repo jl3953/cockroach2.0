@@ -1419,10 +1419,10 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
 				}
-
-				res = ex.clientComm.(ClientCommRaw).CreateNewMiscResult(pos)
-
 			}
+			// jenndebug IDK why this line being here prevents deadlocks, but it does
+			res = ex.clientComm.(ClientCommRaw).CreateNewMiscResult(pos)
+
 			break
 		}
 
