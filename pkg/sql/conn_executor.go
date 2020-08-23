@@ -1424,7 +1424,16 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 				}
 
 				ex.handleAutoCommit(ctx, nil) // jenndebug this'll come back to haunt my ass
-				res = ex.clientComm.CreateSyncResult(pos)
+
+				res = ex.clientComm.CreateStatementResult(
+					nil,
+					DontNeedRowDesc,
+					pos, portal.OutFormats,
+					ex.sessionData.DataConversion,
+					tcmd.Limit,
+					"",
+					ex.implicitTxn())
+
 			}
 			break
 		}
