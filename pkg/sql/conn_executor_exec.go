@@ -840,13 +840,16 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 	if ex.state.mu.txn.HasResultReadHotkeys() {
 		hotkeys := ex.state.mu.txn.GetAndClearResultReadHotkeys()
 
-		hotkey := int(binary.BigEndian.Uint64(hotkeys[0]))
+		for i := 0; i < len(hotkeys); i += 2 {
+			key := binary.BigEndian.Uint64(hotkeys[i])
+			val := hotkeys[1]
 
-		datum := tree.Datums{
-			tree.NewDInt(tree.DInt(hotkey)),
-			tree.NewDBytes(tree.DBytes(hotkeys[1])),
+			datum := tree.Datums{
+				tree.NewDInt(tree.DInt(key)),
+				tree.NewDBytes(tree.DBytes(val)),
+			}
+			res.(BufferResult).BufferRow(ctx, datum)
 		}
-		res.(BufferResult).BufferRow(ctx, datum)
 	}
 
 	return err
