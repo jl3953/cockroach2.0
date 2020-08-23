@@ -1099,7 +1099,6 @@ func (c *conn) bufferRow(
 	conv sessiondata.DataConversionConfig,
 	types []*types.T,
 ) {
-	log.Warningf(ctx, "jenndebug formatCodes:[%+v], conv:[%+v], types:[%+v]", formatCodes, conv, types)
 	c.msgBuilder.initMsg(pgwirebase.ServerMsgDataRow)
 	c.msgBuilder.putInt16(int16(len(row)))
 	for i, col := range row {
