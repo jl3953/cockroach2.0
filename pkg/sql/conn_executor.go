@@ -1434,6 +1434,8 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 					"",
 					ex.implicitTxn())
 
+				res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
+
 			}
 			break
 		}
