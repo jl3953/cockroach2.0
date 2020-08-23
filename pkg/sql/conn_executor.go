@@ -1425,16 +1425,8 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 				ex.handleAutoCommit(ctx, nil) // jenndebug this'll come back to haunt my ass
 
-				res = ex.clientComm.CreateStatementResult(
-					nil,
-					DontNeedRowDesc,
-					pos, portal.OutFormats,
-					ex.sessionData.DataConversion,
-					tcmd.Limit,
-					"",
-					ex.implicitTxn())
-
-				res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
+				res = ex.clientComm.(ClientCommRaw).CreateNewMiscResult(pos)
+				// res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
 
 			}
 			break

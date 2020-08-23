@@ -567,6 +567,10 @@ const (
 	DontNeedRowDesc RowDescOpt = true
 )
 
+type ClientCommRaw interface {
+	CreateNewMiscResult(pos CmdPos) CommandResult
+}
+
 // ClientComm is the interface used by the connExecutor for creating results to
 // be communicated to client and for exerting some control over this
 // communication.
