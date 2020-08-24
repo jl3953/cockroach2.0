@@ -1,0 +1,64 @@
+{
+    "exp_params": {
+        "out_dir": "/usr/local/temp/go/src/github.com/cockroachdb/cockroach/experiments/../hotshard/kv-skew_32/skew-0",
+        "trials": 1,
+        "cockroach_commit": "hotshard",
+        "workload_nodes": [
+            {
+                "ip": "192.168.1.1"
+            },
+            {
+                "ip": "192.168.1.6"
+            },
+            {
+                "ip": "192.168.1.7"
+            },
+            {
+                "ip": "192.168.1.8"
+            },
+            {
+                "ip": "192.168.1.9"
+            }
+        ],
+        "hot_nodes": [],
+        "warm_nodes": [
+            {
+                "ip": "192.168.1.2",
+                "region": "newyork",
+                "store": "/data"
+            },
+            {
+                "ip": "192.168.1.3",
+                "region": "london",
+                "store": "/data"
+            },
+            {
+                "ip": "192.168.1.4",
+                "region": "tokyo",
+                "store": "/data"
+            }
+        ],
+        "benchmark": {
+            "name": "kv",
+            "init_args": {},
+            "run_args": {
+                "concurrency": 32,
+                "warmup_duration": 100,
+                "duration": 45,
+                "read_percent": 95,
+                "n_keys_per_statement": 6,
+                "distribution": {
+                    "type": "zipf",
+                    "params": {
+                        "skew": 0.6
+                    }
+                },
+                "use_original_zipfian": false,
+                "keyspace": 1000000
+            }
+        },
+        "use_hot_nodes_as_gateways": false,
+        "hot_key": -1,
+        "should_create_partition": true
+    }
+}
