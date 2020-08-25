@@ -661,8 +661,16 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	_, err = c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	i := 0
+	for err != nil && i < 3 {
+		i++
+		log.Warningf(context.Background(), "jenndebugrpc could not greet, retries:[%d], err:[%v]", i, err)
+		_, err = c.SayHello(ctx, &pb.HelloRequest{Name: name})
+	}
+
 	if err != nil {
-		log.Fatalf(context.Background(), "jenndebugrpc could not greet, err:[%v]", err)
+		log.Warningf(context.Background(), "jenndebugrpc could not greet "+
+			"exceeded acceptable retries:[%+d], err:[%+v]", i, err)
 	}
 
 	// JENNDEBUG TODO filling in fake deadline
