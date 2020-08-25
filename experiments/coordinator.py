@@ -246,7 +246,6 @@ def calculate_and_output_final_override(trials, overall_dir, override_file):
   #   write_out = [int(m) for m in medians]
   #   f.write("concurrency = " + str(write_out))
 
-
 def driver(baseline_file, override_file, csv_dir, csv_file):
   """ Calls driver script."""
 
