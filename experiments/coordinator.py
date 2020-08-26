@@ -409,7 +409,7 @@ def main():
   # stage latency throughput
   if stage == stage.LATENCY_THROUGHPUT:
 
-    param_outputs = []
+    # param_outputs = []
     for trial in range(1, args.lt_trials + 1):
       # skews_for_trial = []
 
