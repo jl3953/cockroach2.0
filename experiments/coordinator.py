@@ -428,7 +428,7 @@ def main():
         # checkpointing
         concurrency = exp_lib.read_concurrency(param_output)
         with open(checkpoint, "a") as f:
-          f.writelines(str(concurrency))
+          f.writelines(str(concurrency) + "\n")
 
         move_logs(args.config, lt_logs)
         bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, trial, s)
