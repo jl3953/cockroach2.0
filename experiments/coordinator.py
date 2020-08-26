@@ -228,7 +228,7 @@ def calculate_and_output_final_override(trials, overall_dir, override_file):
 
   concurrencies_over_trials = []
   skews = []
-  for trial in (1, trials + 1):
+  for trial in range(1, trials + 1):
     checkpoint = os.path.join(overall_dir, construct_checkpoint_file(trial))
     skews, concurrencies = exp_lib.read_skew_concurrency_pairs(checkpoint)
     concurrencies_over_trials.append(concurrencies)
