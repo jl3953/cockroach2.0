@@ -645,7 +645,7 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 
 func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, hlc.Timestamp) {
 
-	address := "node-4:50051"
+	/*address := "node-4:50051"
 	defaultName := "world"
 
 	// Set up a connection to the server
@@ -671,7 +671,7 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 	if err != nil {
 		log.Warningf(context.Background(), "jenndebugrpc could not greet "+
 			"exceeded acceptable retries:[%+d], err:[%+v]", i, err)
-	}
+	}*/
 
 	// JENNDEBUG TODO filling in fake deadline
 	deadline := new(hlc.Timestamp)
