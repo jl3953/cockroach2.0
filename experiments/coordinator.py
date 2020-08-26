@@ -233,7 +233,7 @@ def calculate_and_output_final_override(trials, overall_dir, override_file):
     skews, concurrencies = exp_lib.read_skew_concurrency_pairs(checkpoint)
     concurrencies_over_trials.append(concurrencies)
 
-  median_concurrencies = numpy.median(concurrencies_over_trials, axis=0)
+  median_concurrencies = [int(m) for m in numpy.median(concurrencies_over_trials, axis=0)]
 
   exp_lib.write_skew_concurrency_overrides(skews, median_concurrencies, override_file)
 
