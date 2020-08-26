@@ -14,6 +14,7 @@ LT_GNUPLOT = os.path.join(FPATH, "lt.gp")
 
 
 
+
 def parse_config_file(baseline_file, lt_file):
   exp, skews = exp_lib.create_experiment(FPATH, baseline_file)
   variation_config = exp_lib.read_variation(lt_file)
@@ -177,7 +178,6 @@ def run_single_trial(find_concurrency_args, report_params_args,
 
   report_optimal_parameters(max_concurrency, report_params_args)
   print(max_concurrency)
-
 
 def main():
   parser = argparse.ArgumentParser(description="find latency throughput graph")
