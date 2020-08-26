@@ -232,7 +232,7 @@ def calculate_and_output_final_override(trials, overall_dir, override_file):
     concurrencies_over_trials = []
 
     checkpoint = os.path.join(overall_dir, construct_checkpoint_file(trial))
-    with open(checkpoint, "a") as f:
+    with open(checkpoint, "r") as f:
       for line in f:
         concurrencies_over_trials.append(line)
 
