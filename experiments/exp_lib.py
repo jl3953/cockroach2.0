@@ -1,5 +1,6 @@
 #!/usr/bin/env python3 
 import configparser
+import csv
 import json
 import os
 
@@ -18,6 +19,36 @@ def read_concurrency(config_file):
   config = configparser.ConfigParser()
   config.read(config_file)
   return json.loads(config["benchmark"]["concurrency"])
+
+
+def write_skew_concurrency_pair(skew, concurrency, csv_file):
+  with open(csv_file, "a", newline='\n') as csvfile:
+    writer = csv.writer(csvfile, delimiter=',')
+    writer.writerow((skew, concurrency))
+
+
+def read_skew_concurrency_pairs(csv_file):
+  skews = []
+  concurrencies = []
+
+  with open(csv_file, "r") as csvfile:
+    reader = csv.reader(csvfile, delimiter=',')
+    for row in reader:
+      skews.append(float(row[0]))
+      concurrencies.append(int(row[1]))
+
+  return skews, concurrencies
+
+
+def write_skew_concurrency_overrides(skews, concurrencies, ini_file):
+  config = configparser.ConfigParser()
+
+  config.add_section("benchmark")
+  config.set("benchmark", "concurrency", str(concurrencies))
+  config.set("benchmark", "skews", str(skews))
+
+  with open(ini_file, "w") as inifile:
+    config.write(inifile)
 
 
 def read_variation(variation_file):
