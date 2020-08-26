@@ -13,6 +13,7 @@ FPATH = os.path.dirname(os.path.realpath(__file__))
 LT_GNUPLOT = os.path.join(FPATH, "lt.gp")
 
 
+
 def parse_config_file(baseline_file, lt_file):
   exp, skews = exp_lib.create_experiment(FPATH, baseline_file)
   variation_config = exp_lib.read_variation(lt_file)
@@ -160,7 +161,6 @@ def report_optimal_parameters(max_concurrency, args):
   with open(args["filename"], "w") as f:
     f.write("[benchmark]\n")
     f.write("concurrency = " + str(max_concurrency) + "\n")
-
 
 def run_single_trial(find_concurrency_args, report_params_args,
                      report_csv_args, skew, is_view_only, use_manual_sampling):

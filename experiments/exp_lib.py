@@ -26,6 +26,12 @@ def write_skew_concurrency_pair(skew, concurrency, csv_file):
     writer = csv.writer(csvfile, delimiter=',')
     writer.writerow((skew, concurrency))
 
+def find_log_dir(fpath, config_file):
+  config = configparser.ConfigParser()
+  config.read(config_file)
+  base_dir = os.path.join(fpath, "..")
+  log_dir = os.path.join(base_dir, config["DEFAULT"]["LOGS_DIR"])
+  return log_dir
 
 def read_skew_concurrency_pairs(csv_file):
   skews = []
@@ -49,7 +55,6 @@ def write_skew_concurrency_overrides(skews, concurrencies, ini_file):
 
   with open(ini_file, "w") as inifile:
     config.write(inifile)
-
 
 def read_variation(variation_file):
   config = configparser.ConfigParser()
