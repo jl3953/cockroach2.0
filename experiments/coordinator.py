@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
-import copy
-import configparser
 import collections
+import configparser
 import csv
 import datetime
 import enum
 import json
 import os
 import sys
+
 import numpy
 
 import bash_imitation
@@ -209,34 +209,40 @@ def move_logs(baseline_file, dest):
   bash_imitation.move_logs(src_logs, dest)
 
 
-def calculate_and_output_final_override(param_files, override_file):
+def construct_checkpoint_file(trial):
+  return "checkpoint_trial_{0}.ini".format(trial)
+
+
+def calculate_and_output_final_override(trials, overall_dir, override_file):
   """ Calculates the median concurrency (in param files) and outputs into
 	override_file.
 
 	Args:
-		param_files (list[str]): list of param files
+	  trials (int)
+	  overall_dir(str)
 		override_file (str): output override file
 
 	Returns:
 		None.
 	"""
 
-  concurrencies = []
-  for param_file_list in param_files:
-    trial = []
-    for param_file in param_file_list:
-      config = configparser.ConfigParser()
-      config.read(param_file)
+  concurrencies_over_trials = []
+  for trial in (1, trials + 1):
 
-      trial.append(json.loads(config["benchmark"]["concurrency"]))
+    concurrencies_over_trials = []
 
-    concurrencies.append(trial)
+    checkpoint = os.path.join(overall_dir, construct_checkpoint_file(trial))
+    with open(checkpoint, "a") as f:
+      for line in f:
+        concurrencies_over_trials.append(line)
 
-  print("jenndebug", concurrencies)
+    concurrencies_over_trials.append(concurrencies_over_trials)
+
+  print("jenndebug", concurrencies_over_trials)
 
   with open(override_file, "w") as f:
     f.write("[benchmark]\n")
-    medians = numpy.median(concurrencies, axis=0)
+    medians = numpy.median(concurrencies_over_trials, axis=0)
     write_out = [int(m) for m in medians]
     f.write("concurrency = " + str(write_out))
 
@@ -405,22 +411,31 @@ def main():
 
     param_outputs = []
     for trial in range(1, args.lt_trials + 1):
-      skews_for_trial = []
+      # skews_for_trial = []
+
+      # checkpoint file for durable storage, since lt process takes the longest
+      checkpoint = os.path.join(overall_dir, construct_checkpoint_file(trial))
+
       for s in extract_skews(args.config):
         param_output = os.path.join(overall_dir, "param_trial_{0}_{1}.ini".format(trial, s))
-        # param_outputs.append(param_output)
-        skews_for_trial.append(param_output)
+        # skews_for_trial.append(param_output)
         lt_csv = os.path.join(csv_dir, "lt_trial_{0}_{1}.csv".format(trial, s))
         lt_logs = os.path.join(raw_out_dir, "lt_logs_trial_{0}_{1}".format(trial, s))
 
         call_latency_throughput(overall_dir, args.config, args.lt_config,
                                 param_output, lt_csv, s)
+
+        # checkpointing
+        concurrency = exp_lib.read_concurrency(param_output)
+        with open(checkpoint, "a") as f:
+          f.writelines(str(concurrency))
+
         move_logs(args.config, lt_logs)
         bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, trial, s)
 
-      param_outputs.append(skews_for_trial)
+      # param_outputs.append(skews_for_trial)
 
-    calculate_and_output_final_override(param_outputs, override_file)
+    calculate_and_output_final_override(args.lt_trials, overall_dir, override_file)
 
     if stage == args.end_stage:
       return 0
