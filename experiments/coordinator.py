@@ -210,7 +210,7 @@ def move_logs(baseline_file, dest):
 
 
 def construct_checkpoint_file(trial):
-  return "checkpoint_trial_{0}.ini".format(trial)
+  return "checkpoint_trial_{0}.csv".format(trial)
 
 
 def calculate_and_output_final_override(trials, overall_dir, override_file):
@@ -227,24 +227,23 @@ def calculate_and_output_final_override(trials, overall_dir, override_file):
 	"""
 
   concurrencies_over_trials = []
+  skews = []
   for trial in (1, trials + 1):
-
-    concurrencies_over_trials = []
-
     checkpoint = os.path.join(overall_dir, construct_checkpoint_file(trial))
-    with open(checkpoint, "r") as f:
-      for line in f:
-        concurrencies_over_trials.append(line)
+    skews, concurrencies = exp_lib.read_skew_concurrency_pairs(checkpoint)
+    concurrencies_over_trials.append(concurrencies)
 
-    concurrencies_over_trials.append(concurrencies_over_trials)
+  median_concurrencies = numpy.median(concurrencies_over_trials, axis=0)
 
-  print("jenndebug", concurrencies_over_trials)
+  exp_lib.write_skew_concurrency_overrides(skews, median_concurrencies, override_file)
 
-  with open(override_file, "w") as f:
-    f.write("[benchmark]\n")
-    medians = numpy.median(concurrencies_over_trials, axis=0)
-    write_out = [int(m) for m in medians]
-    f.write("concurrency = " + str(write_out))
+  # print("jenndebug", skews, concurrencies_over_trials)
+
+  # with open(override_file, "w") as f:
+  #   f.write("[benchmark]\n")
+  #   medians = numpy.median(concurrencies_over_trials, axis=0)
+  #   write_out = [int(m) for m in medians]
+  #   f.write("concurrency = " + str(write_out))
 
 
 def driver(baseline_file, override_file, csv_dir, csv_file):
@@ -427,8 +426,7 @@ def main():
 
         # checkpointing
         concurrency = exp_lib.read_concurrency(param_output)
-        with open(checkpoint, "a") as f:
-          f.writelines(str(concurrency) + "\n")
+        exp_lib.write_skew_concurrency_pair(s, concurrency, checkpoint)
 
         move_logs(args.config, lt_logs)
         bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, trial, s)

@@ -40,6 +40,17 @@ def read_skew_concurrency_pairs(csv_file):
   return skews, concurrencies
 
 
+def write_skew_concurrency_overrides(skews, concurrencies, ini_file):
+  config = configparser.ConfigParser()
+
+  config.add_section("benchmark")
+  config.set("benchmark", "concurrency", str(concurrencies))
+  config.set("benchmark", "skews", str(skews))
+
+  with open(ini_file, "w") as inifile:
+    config.write(inifile)
+
+
 def read_variation(variation_file):
   config = configparser.ConfigParser()
   config.read(variation_file)
