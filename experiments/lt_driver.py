@@ -27,6 +27,30 @@ def last_adjustments(max_concurrency):
   return max_concurrency - 1
 
 
+def sample_lt(start, end, step_size, exp, skew):
+
+  data = []
+  for concurrency in range(start, end, step_size):
+    exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
+    original_outdir = exp["out_dir"]
+    exp["out_dir"] += " " + str(concurrency)
+    skew_list_with_one_item = [skew]
+    exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
+
+    for e in exps:
+      lib.cleanup_previous_experiment(exp)
+      lib.init_experiment(exp)
+      lib.warmup_cluster(e)
+      lib.run_bench(e)
+
+    datum = {"concurrency": concurrency}
+    datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
+    data.append(datum)
+    exp["out_dir"] = original_outdir
+
+  return data
+
+
 def find_optimal_concurrency(exp, variations, skew, is_view_only):
   """ Returns:
 	Max concurrency, csv data
@@ -36,33 +60,35 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
   step_size = variations["variation"]["step_size"]
   end = variations["variation"]["concurrency"][1] + step_size
 
-  data = []
-  max_concurrency = -1
-  while step_size > 0:
-    for concurrency in range(start, end, step_size):
-      exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
-      original_outdir = exp["out_dir"]
-      exp["out_dir"] += "_" + str(concurrency)
-      skew_list_with_one_item = [skew]
-      exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
+  print(sample_lt(start, end, step_size, exp, skew))
 
-      for e in exps:
-        lib.cleanup_previous_experiment(exp)
-        lib.init_experiment(exp)
-        lib.warmup_cluster(e)
-        if not is_view_only:
-          lib.run_bench(e)
-
-      datum = {"concurrency": concurrency}
-      datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
-      data.append(datum)
-      exp["out_dir"] = original_outdir
-
-    max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
-    concurrency = max_concurrency
-    start = concurrency - step_size
-    end = concurrency + step_size
-    step_size = int(step_size / 2)
+  # data = []
+  # max_concurrency = -1
+  # while step_size > 0:
+  #   for concurrency in range(start, end, step_size):
+  #     exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
+  #     original_outdir = exp["out_dir"]
+  #     exp["out_dir"] += "_" + str(concurrency)
+  #     skew_list_with_one_item = [skew]
+  #     exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
+  #
+  #     for e in exps:
+  #       lib.cleanup_previous_experiment(exp)
+  #       lib.init_experiment(exp)
+  #       lib.warmup_cluster(e)
+  #       if not is_view_only:
+  #         lib.run_bench(e)
+  #
+  #     datum = {"concurrency": concurrency}
+  #     datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
+  #     data.append(datum)
+  #     exp["out_dir"] = original_outdir
+  #
+  #   max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+  #   concurrency = max_concurrency
+  #   start = concurrency - step_size
+  #   end = concurrency + step_size
+  #   step_size = int(step_size / 2)
 
   max_concurrency = last_adjustments(max_concurrency)
   return max_concurrency, data
@@ -106,12 +132,13 @@ def run_single_trial(find_concurrency_args, report_params_args,
                      report_csv_args, skew, is_view_only):
   set_params, variations = parse_config_file(find_concurrency_args["baseline_file"],
                                              find_concurrency_args["lt_file"])
+
   max_concurrency, csv_data = find_optimal_concurrency(set_params,
                                                        variations, skew, is_view_only)
-  report_csv_data(csv_data, report_csv_args, skew)
-
-  report_optimal_parameters(max_concurrency, report_params_args)
-  print(max_concurrency)
+  # report_csv_data(csv_data, report_csv_args, skew)
+  #
+  # report_optimal_parameters(max_concurrency, report_params_args)
+  # print(max_concurrency)
 
 
 def main():
