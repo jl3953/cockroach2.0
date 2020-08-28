@@ -33,7 +33,7 @@ def sample_lt(start, end, step_size, exp, skew):
   for concurrency in range(start, end, step_size):
     exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
     original_outdir = exp["out_dir"]
-    exp["out_dir"] += " " + str(concurrency)
+    exp["out_dir"] += "_" + str(concurrency)
     skew_list_with_one_item = [skew]
     exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
 
