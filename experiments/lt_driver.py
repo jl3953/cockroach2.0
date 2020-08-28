@@ -54,7 +54,7 @@ def sample_lt(start, end, step_size, exp, skew):
     report_csv_args = {"filename": temp_csv}
     report_csv_data(data, report_csv_args, mode="a")
 
-    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, 214, skew)
+    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, 214, skew)
 
   return data
 
