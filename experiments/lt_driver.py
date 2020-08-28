@@ -68,7 +68,7 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
   step_size = variations["variation"]["step_size"]
   end = variations["variation"]["concurrency"][1] + step_size
 
-  # print(sample_lt(start, end, step_size, exp, skew))
+  print(sample_lt(start, end, step_size, exp, skew))
 
   # data = []
   # max_concurrency = -1
@@ -169,9 +169,7 @@ def main():
     "filename": args.csv_output,
   }
 
-  print("=====================================")
   print(report_csv_args)
-  print("=====================================")
 
   report_params_args = {
     "filename": args.params_output,
