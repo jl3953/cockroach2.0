@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import operator
 import os
 
 import exp_lib
@@ -159,6 +158,10 @@ def main():
   report_csv_args = {
     "filename": args.csv_output,
   }
+
+  print("=====================================")
+  print(report_csv_args)
+  print("=====================================")
 
   report_params_args = {
     "filename": args.params_output,
