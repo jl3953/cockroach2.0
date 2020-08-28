@@ -98,7 +98,6 @@ def write_out_data(data, outfile, mode="w"):
 
   return outfile
 
-
 def aggregate(acc):
   """ Aggregates data across workload nodes.
 

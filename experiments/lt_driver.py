@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import operator
 import os
 
 import bash_imitation
@@ -11,8 +10,6 @@ import plotlib
 
 FPATH = os.path.dirname(os.path.realpath(__file__))
 LT_GNUPLOT = os.path.join(FPATH, "lt.gp")
-
-
 
 
 def parse_config_file(baseline_file, lt_file):
@@ -77,11 +74,20 @@ def sample_lt(start, end, step_size, exp, skew):
       lib.warmup_cluster(e)
       lib.run_bench(e)
 
+    temp_dir = os.path.join(exp["out_dir"], "skew-0")
+    temp_csv = os.path.join(temp_dir, "lt.csv")
     datum = {"concurrency": concurrency}
-    datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
+    datum.update(plotlib.accumulate_workloads_per_skew(exp, temp_dir)[0])
     data.append(datum)
     exp["out_dir"] = original_outdir
 
+    # plotting data for viewing
+    report_csv_args = {"filename": temp_csv}
+    report_csv_data(data, report_csv_args, mode="a")
+
+    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, 214, skew)
+
+  raise AssertionError("jenndebug stop")
   return data
 
 
