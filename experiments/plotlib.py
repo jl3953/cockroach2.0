@@ -55,7 +55,7 @@ def read_in_data(infile):
   data = []
   if os.path.exists(infile):
     with open(infile, "r") as csvfile:
-      reader = csv.DictReader(csvfile)
+      reader = csv.DictReader(csvfile, delimiter='\t')
       for row in reader:
         data.append(dict(row))
 
