@@ -57,6 +57,9 @@ def read_in_data(infile):
     with open(infile, "r") as csvfile:
       reader = csv.DictReader(csvfile, delimiter='\t')
       for row in reader:
+        for key in row:
+          row[key] = float(row[key])
+
         data.append(dict(row))
 
   return data
