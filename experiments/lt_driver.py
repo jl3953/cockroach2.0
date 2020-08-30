@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import operator
 import os
 
 import bash_imitation
@@ -10,6 +11,7 @@ import plotlib
 
 FPATH = os.path.dirname(os.path.realpath(__file__))
 LT_GNUPLOT = os.path.join(FPATH, "lt.gp")
+
 
 def parse_config_file(baseline_file, lt_file):
   exp, skews = exp_lib.create_experiment(FPATH, baseline_file)
@@ -27,8 +29,38 @@ def last_adjustments(max_concurrency):
   return max_concurrency - 1
 
 
-def sample_lt(start, end, step_size, exp, skew):
+def find_optimal_concurrency_in_stages(exp, variations, skew):
+  start = variations["variation"]["concurrency"][0]
+  step_size = variations["variation"]["step_size"]
+  end = variations["variation"]["concurrency"][1] + step_size
 
+  # plotting parameters
+  temp_dir = exp["out_dir"] + "_" + str(start)
+  temp_dir = os.path.join(temp_dir, "..")
+  temp_csv = os.path.join(temp_dir, "lt.csv")
+
+  # start sampling
+  should_keep_sampling = True
+  while should_keep_sampling:
+    data = sample_lt(start, end, step_size, exp, skew)
+    plotlib.insert_lt_csv_data(data, temp_csv)
+    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, "jenn", skew)
+
+    # should we keep sampling?
+    should_not_keep_sampling = input("Continue sampling [{0}, {1}, step_size={2}]?".format(start, end, step_size) +
+                                     " Hit Enter to continue: ")
+    should_keep_sampling = not should_not_keep_sampling
+    if should_keep_sampling:
+      start = int(input("Start concurrency (prev={0}): ".format(start)))
+      end = int(input("End concurrency (prev={0}): ".format(end)))
+      step_size = int(input("Step_size (prev={0}): ".format(step_size)))
+
+  max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+  max_concurrency = last_adjustments(max_concurrency)
+  return max_concurrency, data
+
+
+def sample_lt(start, end, step_size, exp, skew):
   data = []
   for concurrency in range(start, end, step_size):
     exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
@@ -43,18 +75,10 @@ def sample_lt(start, end, step_size, exp, skew):
       lib.warmup_cluster(e)
       lib.run_bench(e)
 
-    temp_dir = os.path.join(exp["out_dir"], "skew-0")
-    temp_csv = os.path.join(temp_dir, "lt.csv")
     datum = {"concurrency": concurrency}
-    datum.update(plotlib.accumulate_workloads_per_skew(exp, temp_dir)[0])
+    datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
     data.append(datum)
     exp["out_dir"] = original_outdir
-
-    # plotting data for viewing
-    report_csv_args = {"filename": temp_csv}
-    report_csv_data(data, report_csv_args, mode="a")
-
-    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, 214, skew)
 
   return data
 
@@ -68,40 +92,36 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
   step_size = variations["variation"]["step_size"]
   end = variations["variation"]["concurrency"][1] + step_size
 
-  print(sample_lt(start, end, step_size, exp, skew))
+  data = []
+  max_concurrency = -1
+  while step_size > 0:
+    for concurrency in range(start, end, step_size):
+      exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
+      original_outdir = exp["out_dir"]
+      exp["out_dir"] += "_" + str(concurrency)
+      skew_list_with_one_item = [skew]
+      exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
 
-  # data = []
-  # max_concurrency = -1
-  # while step_size > 0:
-  #   for concurrency in range(start, end, step_size):
-  #     exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
-  #     original_outdir = exp["out_dir"]
-  #     exp["out_dir"] += "_" + str(concurrency)
-  #     skew_list_with_one_item = [skew]
-  #     exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
-  #
-  #     for e in exps:
-  #       lib.cleanup_previous_experiment(exp)
-  #       lib.init_experiment(exp)
-  #       lib.warmup_cluster(e)
-  #       if not is_view_only:
-  #         lib.run_bench(e)
-  #
-  #     datum = {"concurrency": concurrency}
-  #     datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
-  #     data.append(datum)
-  #     exp["out_dir"] = original_outdir
-  #
-  #   max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
-  #   concurrency = max_concurrency
-  #   start = concurrency - step_size
-  #   end = concurrency + step_size
-  #   step_size = int(step_size / 2)
+      for e in exps:
+        lib.cleanup_previous_experiment(exp)
+        lib.init_experiment(exp)
+        lib.warmup_cluster(e)
+        if not is_view_only:
+          lib.run_bench(e)
 
-  # max_concurrency = last_adjustments(max_concurrency)
-  # return max_concurrency, data
-  return None
+      datum = {"concurrency": concurrency}
+      datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
+      data.append(datum)
+      exp["out_dir"] = original_outdir
 
+    max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+    concurrency = max_concurrency
+    start = concurrency - step_size
+    end = concurrency + step_size
+    step_size = int(step_size / 2)
+
+  max_concurrency = last_adjustments(max_concurrency)
+  return max_concurrency, data
 
 def report_csv_data(csv_data, args, mode="w"):
   """ Outputs csv data to file storage.
@@ -116,6 +136,7 @@ def report_csv_data(csv_data, args, mode="w"):
 
 	"""
   data = sorted(csv_data, key=lambda i: i["concurrency"])
+  print(args)
   _ = plotlib.write_out_data(data, args["filename"], mode)
 
 
@@ -138,16 +159,20 @@ def report_optimal_parameters(max_concurrency, args):
 
 
 def run_single_trial(find_concurrency_args, report_params_args,
-                     report_csv_args, skew, is_view_only):
+                     report_csv_args, skew, is_view_only, use_manual_sampling):
   set_params, variations = parse_config_file(find_concurrency_args["baseline_file"],
                                              find_concurrency_args["lt_file"])
 
-  max_concurrency, csv_data = find_optimal_concurrency(set_params,
-                                                       variations, skew, is_view_only)
-  # report_csv_data(csv_data, report_csv_args, skew)
-  #
-  # report_optimal_parameters(max_concurrency, report_params_args)
-  # print(max_concurrency)
+  if use_manual_sampling:
+    max_concurrency, csv_data = find_optimal_concurrency_in_stages(set_params, variations, skew)
+  else:
+    max_concurrency, csv_data = find_optimal_concurrency(set_params,
+                                                         variations, skew, is_view_only)
+
+  report_csv_data(csv_data, report_csv_args)
+
+  report_optimal_parameters(max_concurrency, report_params_args)
+  print(max_concurrency)
 
 
 def main():
@@ -159,6 +184,8 @@ def main():
   parser.add_argument('skew', type=float, help="skew with which latency throughput is run")
   parser.add_argument('--is_view_only', action='store_true',
                       help='only runs warmup for short testing')
+  parser.add_argument('--use_manual_sampling', action='store_true',
+                      help='uses manual sampling to find latency throughput')
   args = parser.parse_args()
 
   find_concurrency_args = {
@@ -176,7 +203,7 @@ def main():
   }
 
   run_single_trial(find_concurrency_args, report_params_args, report_csv_args,
-                   args.skew, args.is_view_only)
+                   args.skew, args.is_view_only, args.use_manual_sampling)
 
 
 if __name__ == "__main__":

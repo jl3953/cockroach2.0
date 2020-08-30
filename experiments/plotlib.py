@@ -51,10 +51,40 @@ def write_out_data_wrapper(data, out_dir, outfile_name="gnuplot.csv"):
   return write_out_data(data, filename)
 
 
+def read_in_data(infile):
+  data = []
+  if os.path.exists(infile):
+    with open(infile, "r") as csvfile:
+      reader = csv.DictReader(csvfile, delimiter='\t')
+      for row in reader:
+        for key in row:
+          row[key] = float(row[key])
+
+        data.append(dict(row))
+
+  return data
+
+
+def insert_lt_csv_data(data, filename):
+  if len(data) <= 0:
+    return None
+
+  existing_rows = read_in_data(filename)
+
+  all_data = existing_rows + data
+  print(all_data)
+  all_data = sorted(all_data, key=lambda i: i["concurrency"])
+
+  _ = write_out_data(all_data, filename)
+
+  return filename
+
+
 def write_out_data(data, outfile, mode="w"):
   if len(data) <= 0:
     return ""
 
+  print(mode)
   with open(outfile, mode) as csvfile:
     writer = csv.DictWriter(csvfile, delimiter='\t', fieldnames=data[0].keys())
     writer.writeheader()
