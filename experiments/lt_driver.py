@@ -57,6 +57,7 @@ def sample_lt(start, end, step_size, exp, skew):
 
     bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, 214, skew)
 
+  raise AssertionError("jenndebug stop")
   return data
 
 
@@ -69,7 +70,7 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
   step_size = variations["variation"]["step_size"]
   end = variations["variation"]["concurrency"][1] + step_size
 
-  # print(sample_lt(start, end, step_size, exp, skew))
+  print(sample_lt(start, end, step_size, exp, skew))
 
   data = []
   max_concurrency = -1
