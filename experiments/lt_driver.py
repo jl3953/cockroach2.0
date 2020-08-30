@@ -38,14 +38,15 @@ def find_optimal_concurrency_in_stages(exp, variations, skew):
   temp_dir = exp["out_dir"] + "_" + str(start)
   temp_dir = os.path.join(temp_dir, "..")
   temp_csv = os.path.join(temp_dir, "lt.csv")
-  report_csv_args = {"filename": temp_csv}
 
+  # start sampling
   should_keep_sampling = True
   while should_keep_sampling:
     data = sample_lt(start, end, step_size, exp, skew)
-    report_csv_data(data, report_csv_args, mode="a")
-    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, 0, skew)
+    plotlib.insert_lt_csv_data(data, temp_csv)
+    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, "jenn", skew)
 
+    # should we keep sampling?
     should_not_keep_sampling = input("Continue sampling? Hit Enter to continue: ")
     should_keep_sampling = not should_not_keep_sampling
     if should_keep_sampling:
@@ -120,8 +121,6 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
 
   max_concurrency = last_adjustments(max_concurrency)
   return max_concurrency, data
-  return None
-
 
 def report_csv_data(csv_data, args, mode="w"):
   """ Outputs csv data to file storage.
