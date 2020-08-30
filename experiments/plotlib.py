@@ -57,7 +57,7 @@ def read_in_data(infile):
     with open(infile, "r") as csvfile:
       reader = csv.DictReader(csvfile)
       for row in reader:
-        data.append(row)
+        data.append(dict(row))
 
   return data
 
