@@ -29,6 +29,33 @@ def last_adjustments(max_concurrency):
   return max_concurrency - 1
 
 
+def find_optimal_concurrency_in_stages(exp, variations, skew):
+  start = variations["variation"]["concurrency"][0]
+  step_size = variations["variation"]["step_size"]
+  end = variations["variation"]["concurrency"][1] + step_size
+
+  # plotting parameters
+  temp_dir = exp["out_dir"] + "_" + str(start)
+  temp_dir = os.path.join(temp_dir, "..")
+  temp_csv = os.path.join(temp_dir, "lt.csv")
+  report_csv_args = {"filename": temp_csv}
+
+  should_keep_sampling = True
+  while should_keep_sampling:
+    data = sample_lt(start, end, step_size, exp, skew)
+    report_csv_data(data, report_csv_args, mode="a")
+    bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, 0, skew)
+
+    should_not_keep_sampling = input("Continue sampling? Hit Enter to continue: ")
+    should_keep_sampling = not should_not_keep_sampling
+    if should_keep_sampling:
+      start = input("Start concurrency (prev={0}): ".format(start))
+      end = input("End concurrency (prev={0}): ".format(end))
+      step_size = input("Step_size (prev={0}): ".format(step_size))
+
+  raise AssertionError("jenndebug stop")
+
+
 def sample_lt(start, end, step_size, exp, skew):
   data = []
   for concurrency in range(start, end, step_size):
@@ -49,16 +76,6 @@ def sample_lt(start, end, step_size, exp, skew):
     data.append(datum)
     exp["out_dir"] = original_outdir
 
-  # plotting data for viewing
-  temp_dir = exp["out_dir"] + "_" + str(start)
-  temp_dir = os.path.join(temp_dir, "..")
-  temp_csv = os.path.join(temp_dir, "lt.csv")
-  report_csv_args = {"filename": temp_csv}
-  report_csv_data(data, report_csv_args, mode="a")
-
-  bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, 214, skew)
-
-  raise AssertionError("jenndebug stop")
   return data
 
 
@@ -146,8 +163,9 @@ def run_single_trial(find_concurrency_args, report_params_args,
   set_params, variations = parse_config_file(find_concurrency_args["baseline_file"],
                                              find_concurrency_args["lt_file"])
 
-  max_concurrency, csv_data = find_optimal_concurrency(set_params,
-                                                       variations, skew, is_view_only)
+  max_concurrency, csv_data = find_optimal_concurrency_in_stages(set_params, variations, skew)
+  # max_concurrency, csv_data = find_optimal_concurrency(set_params,
+  #                                                      variations, skew, is_view_only)
   report_csv_data(csv_data, report_csv_args)
 
   report_optimal_parameters(max_concurrency, report_params_args)
