@@ -69,6 +69,7 @@ def insert_lt_csv_data(data, filename):
   existing_rows = read_in_data(filename)
 
   all_data = existing_rows + data
+  print(all_data)
   all_data = sorted(all_data, key=lambda i: i["concurrency"])
 
   _ = write_out_data(all_data, filename)
