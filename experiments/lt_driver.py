@@ -47,12 +47,13 @@ def find_optimal_concurrency_in_stages(exp, variations, skew):
     bash_imitation.gnuplot(LT_GNUPLOT, temp_csv, temp_dir, "jenn", skew)
 
     # should we keep sampling?
-    should_not_keep_sampling = input("Continue sampling? Hit Enter to continue: ")
+    should_not_keep_sampling = input("Continue sampling [{0}, {1}, step_size={2}]?".format(start, end, step_size) +
+                                     " Hit Enter to continue: ")
     should_keep_sampling = not should_not_keep_sampling
     if should_keep_sampling:
-      start = input("Start concurrency (prev={0}): ".format(start))
-      end = input("End concurrency (prev={0}): ".format(end))
-      step_size = input("Step_size (prev={0}): ".format(step_size))
+      start = int(input("Start concurrency (prev={0}): ".format(start)))
+      end = int(input("End concurrency (prev={0}): ".format(end)))
+      step_size = int(input("Step_size (prev={0}): ".format(step_size)))
 
   raise AssertionError("jenndebug stop")
 
