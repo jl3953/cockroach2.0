@@ -55,6 +55,7 @@ def write_out_data(data, outfile, mode="w"):
   if len(data) <= 0:
     return ""
 
+  print(mode)
   with open(outfile, mode) as csvfile:
     writer = csv.DictWriter(csvfile, delimiter='\t', fieldnames=data[0].keys())
     writer.writeheader()
