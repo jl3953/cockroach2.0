@@ -50,7 +50,8 @@ def sample_lt(start, end, step_size, exp, skew):
     exp["out_dir"] = original_outdir
 
   # plotting data for viewing
-  temp_dir = exp["out_dir"]
+  temp_dir = exp["out_dir"] + "_" + str(start)
+  temp_dir = os.path.join(temp_dir, "..")
   temp_csv = os.path.join(temp_dir, "lt.csv")
   report_csv_args = {"filename": temp_csv}
   report_csv_data(data, report_csv_args, mode="a")
