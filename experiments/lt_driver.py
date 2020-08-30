@@ -117,6 +117,7 @@ def report_csv_data(csv_data, args, mode="w"):
 
 	"""
   data = sorted(csv_data, key=lambda i: i["concurrency"])
+  print(args)
   _ = plotlib.write_out_data(data, args["filename"], mode)
 
 
@@ -145,7 +146,7 @@ def run_single_trial(find_concurrency_args, report_params_args,
 
   max_concurrency, csv_data = find_optimal_concurrency(set_params,
                                                        variations, skew, is_view_only)
-  report_csv_data(csv_data, report_csv_args, skew)
+  report_csv_data(csv_data, report_csv_args)
 
   report_optimal_parameters(max_concurrency, report_params_args)
   print(max_concurrency)
