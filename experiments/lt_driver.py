@@ -68,38 +68,38 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
   step_size = variations["variation"]["step_size"]
   end = variations["variation"]["concurrency"][1] + step_size
 
-  print(sample_lt(start, end, step_size, exp, skew))
+  # print(sample_lt(start, end, step_size, exp, skew))
 
-  # data = []
-  # max_concurrency = -1
-  # while step_size > 0:
-  #   for concurrency in range(start, end, step_size):
-  #     exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
-  #     original_outdir = exp["out_dir"]
-  #     exp["out_dir"] += "_" + str(concurrency)
-  #     skew_list_with_one_item = [skew]
-  #     exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
-  #
-  #     for e in exps:
-  #       lib.cleanup_previous_experiment(exp)
-  #       lib.init_experiment(exp)
-  #       lib.warmup_cluster(e)
-  #       if not is_view_only:
-  #         lib.run_bench(e)
-  #
-  #     datum = {"concurrency": concurrency}
-  #     datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
-  #     data.append(datum)
-  #     exp["out_dir"] = original_outdir
-  #
-  #   max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
-  #   concurrency = max_concurrency
-  #   start = concurrency - step_size
-  #   end = concurrency + step_size
-  #   step_size = int(step_size / 2)
+  data = []
+  max_concurrency = -1
+  while step_size > 0:
+    for concurrency in range(start, end, step_size):
+      exp["benchmark"]["run_args"]["concurrency"] = [concurrency]
+      original_outdir = exp["out_dir"]
+      exp["out_dir"] += "_" + str(concurrency)
+      skew_list_with_one_item = [skew]
+      exps = lib.vary_zipf_skew(exp, skew_list_with_one_item)
 
-  # max_concurrency = last_adjustments(max_concurrency)
-  # return max_concurrency, data
+      for e in exps:
+        lib.cleanup_previous_experiment(exp)
+        lib.init_experiment(exp)
+        lib.warmup_cluster(e)
+        if not is_view_only:
+          lib.run_bench(e)
+
+      datum = {"concurrency": concurrency}
+      datum.update(plotlib.accumulate_workloads_per_skew(exp, os.path.join(exp["out_dir"], "skew-0"))[0])
+      data.append(datum)
+      exp["out_dir"] = original_outdir
+
+    max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+    concurrency = max_concurrency
+    start = concurrency - step_size
+    end = concurrency + step_size
+    step_size = int(step_size / 2)
+
+  max_concurrency = last_adjustments(max_concurrency)
+  return max_concurrency, data
   return None
 
 
