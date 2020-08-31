@@ -14,8 +14,8 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"google.golang.org/grpc"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	//"google.golang.org/grpc"
+	//pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
