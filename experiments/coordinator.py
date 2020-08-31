@@ -187,7 +187,7 @@ def call_latency_throughput(baseline_file, lt_file, params_file, csv_file, skew,
 	"""
 
   # call lt script
-  cmd = "{0} {1} {2} {3} {4} {5} {6}".format(
+  cmd = "{0} {1} {2} {3} {4} {5}".format(
     LT_EXECUTABLE, baseline_file, lt_file, params_file, csv_file, skew)
   if use_manual_sampling:
     cmd += " --use_manual_sampling"
