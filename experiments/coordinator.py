@@ -369,7 +369,7 @@ def main():
                       help="which stage to stop running after. Useful for testing.")
   parser.add_argument("--existing_directory",
                       help="existing directory to use. Useful for testing.")
-  parser.add_argument("--use_manual_sampling", type=bool, action='store_true',
+  parser.add_argument("--use_manual_sampling", action='store_true',
                       help="requires babysitting the sampling process.")
 
   args = parser.parse_args()
