@@ -55,7 +55,9 @@ def find_optimal_concurrency_in_stages(exp, variations, skew):
       end = int(input("End concurrency (prev={0}): ".format(end)))
       step_size = int(input("Step_size (prev={0}): ".format(step_size)))
 
-  raise AssertionError("jenndebug stop")
+  max_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+  max_concurrency = last_adjustments(max_concurrency)
+  return max_concurrency, data
 
 
 def sample_lt(start, end, step_size, exp, skew):
@@ -89,8 +91,6 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
   start = variations["variation"]["concurrency"][0]
   step_size = variations["variation"]["step_size"]
   end = variations["variation"]["concurrency"][1] + step_size
-
-  print(sample_lt(start, end, step_size, exp, skew))
 
   data = []
   max_concurrency = -1
@@ -159,13 +159,16 @@ def report_optimal_parameters(max_concurrency, args):
 
 
 def run_single_trial(find_concurrency_args, report_params_args,
-                     report_csv_args, skew, is_view_only):
+                     report_csv_args, skew, is_view_only, use_manual_sampling):
   set_params, variations = parse_config_file(find_concurrency_args["baseline_file"],
                                              find_concurrency_args["lt_file"])
 
-  max_concurrency, csv_data = find_optimal_concurrency_in_stages(set_params, variations, skew)
-  # max_concurrency, csv_data = find_optimal_concurrency(set_params,
-  #                                                      variations, skew, is_view_only)
+  if use_manual_sampling:
+    max_concurrency, csv_data = find_optimal_concurrency_in_stages(set_params, variations, skew)
+  else:
+    max_concurrency, csv_data = find_optimal_concurrency(set_params,
+                                                         variations, skew, is_view_only)
+
   report_csv_data(csv_data, report_csv_args)
 
   report_optimal_parameters(max_concurrency, report_params_args)
@@ -181,6 +184,8 @@ def main():
   parser.add_argument('skew', type=float, help="skew with which latency throughput is run")
   parser.add_argument('--is_view_only', action='store_true',
                       help='only runs warmup for short testing')
+  parser.add_argument('--use_manual_sampling', action='store_true',
+                      help='uses manual sampling to find latency throughput')
   args = parser.parse_args()
 
   find_concurrency_args = {
@@ -198,7 +203,7 @@ def main():
   }
 
   run_single_trial(find_concurrency_args, report_params_args, report_csv_args,
-                   args.skew, args.is_view_only)
+                   args.skew, args.is_view_only, args.use_manual_sampling)
 
 
 if __name__ == "__main__":
