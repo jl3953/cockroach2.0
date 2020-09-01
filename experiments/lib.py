@@ -1,5 +1,4 @@
 import copy
-import csv
 import json
 import os
 import shlex
@@ -7,6 +6,8 @@ import subprocess
 import sys
 
 # Constants
+import bash_imitation
+
 COCKROACH_DIR = "/usr/local/temp/go/src/github.com/cockroachdb/cockroach"
 EXE = os.path.join(COCKROACH_DIR, "cockroach")
 STORE_DIR = "/data"
@@ -33,11 +34,11 @@ def call_remote(host, cmd, err_msg):
 
 
 def call_remote_redirect_stdout(host, cmd, err_msg, path):
-	cmd = "sudo ssh {0} '{1}'".format(host, cmd)
-	print(cmd)
-	print(path)
-	with open(path, "w") as f:
-		return subprocess.Popen(shlex.split(cmd), stdout=f)
+  cmd = "sudo ssh {0} '{1}'".format(host, cmd)
+  print(cmd)
+  print(path)
+  with open(path, "w") as f:
+    return subprocess.Popen(shlex.split(cmd), stdout=f)
 
 
 def init_store(node):
@@ -82,9 +83,9 @@ def start_cockroach_node(node, join=None):
            "--locality=region={3} "
            "--cache=.25 "
            "--max-sql-memory=.25 "
-		   "--log-file-verbosity=2 "
+           "--log-file-verbosity=2 "
            "--background"
-		   ).format(EXE, ip, store, region)
+           ).format(EXE, ip, store, region)
 
     if join:
         cmd = "{0} --join={1}:26257".format(cmd, join)
@@ -95,20 +96,19 @@ def start_cockroach_node(node, join=None):
 
 
 def query_for_shards(ip, config):
+  cmd = '/usr/local/temp/go/src/github.com/cockroachdb/cockroach/cockroach sql --insecure --execute "show experimental_ranges from table kv.kv"'
+  # cmd = "sudo ssh {0} '{1}'".format(ip, cmd)
 
-	cmd = '/usr/local/temp/go/src/github.com/cockroachdb/cockroach/cockroach sql --insecure --execute "show experimental_ranges from table kv.kv"'
-	# cmd = "sudo ssh {0} '{1}'".format(ip, cmd)
+  out_dir = config["out_dir"]
+  if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
-	out_dir = config["out_dir"]
-	if not os.path.exists(out_dir):
-		os.makedirs(out_dir)
-		
-	save_params(config, out_dir)
+  save_params(config, out_dir)
 
-	outfile = os.path.join(out_dir, "shards.csv")
+  outfile = os.path.join(out_dir, "shards.csv")
 
-	p = call_remote_redirect_stdout(ip, cmd, "query_shard_err", outfile)
-	p.wait()
+  p = call_remote_redirect_stdout(ip, cmd, "query_shard_err", outfile)
+  p.wait()
 
 
 def set_cluster_settings(node):
@@ -125,42 +125,45 @@ def set_cluster_settings(node):
 
 
 def grep_for_term(config, term):
+  nodes = config["hot_nodes"] + config["warm_nodes"]
 
-	nodes = config["hot_nodes"] + config["warm_nodes"]
+  out_dir = config["out_dir"]
+  if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
-	out_dir = config["out_dir"]
-	if not os.path.exists(out_dir):
-		os.makedirs(out_dir)
-		
-	save_params(config, out_dir)
+  save_params(config, out_dir)
 
-	outfile = os.path.join(out_dir, "bumps.csv")
-	print(outfile)
+  outfile = os.path.join(out_dir, "bumps.csv")
+  print(outfile)
 
-	ssh = "sudo ssh {0} '{1}'"
-	template= 'grep -ir "{0}" /data/logs/cockroach.node-* | wc -l'.format(term)
-	ps = []
-	with open(outfile, "w") as f:
-		i = 1
+  ssh = "sudo ssh {0} '{1}'"
+  template = 'grep -ir "{0}" /data/logs/cockroach.node-* | wc -l'.format(term)
+  ps = []
+  with open(outfile, "w") as f:
+    i = 1
 
-	with open(outfile, "a") as f:
-		for n in nodes:
-			cmd = ssh.format(n["ip"], template)
-			print(cmd)
-			p = subprocess.Popen(shlex.split(cmd), stdout=f)
-			p.wait()
+  with open(outfile, "a") as f:
+    for n in nodes:
+      cmd = ssh.format(n["ip"], template)
+      print(cmd)
+      p = subprocess.Popen(shlex.split(cmd), stdout=f)
+      p.wait()
 
-		
+
 def start_cluster(nodes):
-    if len(nodes) == 0:
-        return
+  """
 
-    first = nodes[0]
-    start_cockroach_node(first).wait()
+  :returns None
+  """
+  if len(nodes) == 0:
+    return None
 
-    ps = []
-    for n in nodes[1:]:
-        ps.append(start_cockroach_node(n, join=first["ip"]))
+  first = nodes[0]
+  start_cockroach_node(first).wait()
+
+  ps = []
+  for n in nodes[1:]:
+    ps.append(start_cockroach_node(n, join=first["ip"]))
 
     for p in ps:
         p.wait()
@@ -205,25 +208,43 @@ def set_hot_keys(nodes, keys):
     values = ', '.join(map(lambda k: "({})".format(k), keys))
 
     for n in nodes:
-        ip = n["ip"]
-        cmd = ('echo "'
-               'alter table kv.kv hotkey at values {2};'
-               '" | {0} sql --insecure '
-               '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip, values)
+      ip = n["ip"]
+      cmd = ('echo "'
+             'alter table kv.kv hotkey at values {2};'
+             '" | {0} sql --insecure '
+             '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip, values)
 
-        call_remote(ip, cmd, "Failed to set cluster settings.")
+      call_remote(ip, cmd, "Failed to set cluster settings.")
+
+
+def disable_cores(cores, *hosts):
+  for host in hosts:
+    for i in range(1, cores + 1):
+      bash_imitation.disable_core(i, host)
+
+
+def enable_cores(cores, *hosts):
+  for host in hosts:
+    for i in range(1, cores + 1):
+      bash_imitation.enable_core(i, host)
 
 
 def init_experiment(config):
-    nodes = config["workload_nodes"] \
-            + config["warm_nodes"] \
-            + config["hot_nodes"]
+  nodes = config["workload_nodes"] \
+          + config["warm_nodes"] \
+          + config["hot_nodes"]
 
-    build_cockroach_commit(nodes, config["cockroach_commit"])
+  build_cockroach_commit(nodes, config["cockroach_commit"])
 
-    # Start hot node separately from warm nodes
-    # start_cluster(config["hot_nodes"])
-    start_cluster(config["warm_nodes"] + config["hot_nodes"]) # no, start them together for now
+  # disable any cores
+  if config["disable_cores"]:
+    hosts = [node["ip"] for node in config["warm_nodes"] + config["hot_nodes"]]
+    disable_cores(config["disable_cores"], hosts)
+
+  # Start hot node separately from warm nodes
+  # start_cluster(config["hot_nodes"])
+  if config["disable_cores"]:
+    start_cluster(config["warm_nodes"] + config["hot_nodes"])  # no, start them together for now
 
 
 def save_params(exp_params, out_dir):
@@ -280,10 +301,10 @@ def vary_zipf_skew(config, skews):
 def parse_bench_args(bench_config, is_warmup=False, hot_key=None):
     args = []
     if "duration" in bench_config:
-    	if is_warmup:
-    		args.append("--duration={}s".format(bench_config["warmup_duration"]))
-    	else: 
-    		args.append("--duration={}s".format(bench_config["duration"]))
+      if is_warmup:
+        args.append("--duration={}s".format(bench_config["warmup_duration"]))
+      else:
+        args.append("--duration={}s".format(bench_config["duration"]))
     
     if "drop" in bench_config and bench_config["drop"] is True:
         args.append("--drop")
@@ -313,10 +334,10 @@ def parse_bench_args(bench_config, is_warmup=False, hot_key=None):
             
             if "use_original_zipfian" in bench_config:
                 args.append("--useOriginal={}".format(bench_config["use_original_zipfian"]))
-				
+
     if hot_key:
         args.append("--hotkey={}".format(hot_key))
-		
+
     if "keyspace" in bench_config:
         args.append("--keyspace={}".format(bench_config["keyspace"]))
 
@@ -324,145 +345,138 @@ def parse_bench_args(bench_config, is_warmup=False, hot_key=None):
 
 
 def init_workload(b, name, urls, workload_nodes):
+  args = parse_bench_args(b["init_args"], is_warmup=True)
+  cmd = "{0} workload init {1} {2} {3}".format(EXE, name, urls, args)
 
-	args = parse_bench_args(b["init_args"], is_warmup=True)
-	cmd = "{0} workload init {1} {2} {3}".format(EXE, name, urls, args)
-
-	ip = workload_nodes[0]["ip"]
-	call_remote(ip, cmd, "Failed to initialize benchmark")
+  ip = workload_nodes[0]["ip"]
+  call_remote(ip, cmd, "Failed to initialize benchmark")
 
 
 def set_database_settings(nodes, create_partition, hot_key):
+  ip = nodes[0]["ip"]
+  cmd = ('echo "'
+         'alter range default configure zone using num_replicas = 1;')
+  if create_partition:
+    cmd += 'alter table kv partition by range(k) (partition hot values from (minvalue) to ({0}), partition warm values from ({0}) to (maxvalue));'.format(
+      hot_key)
+    cmd += "alter partition hot of table kv configure zone using constraints='\\''[+region=newyork]'\\'';"
+    cmd += "alter partition warm of table kv configure zone using constraints='\\''[-region=newyork]'\\'';"
 
-	ip = nodes[0]["ip"]
-	cmd = ('echo "'
-			'alter range default configure zone using num_replicas = 1;')
-	if create_partition:
-		cmd +=  'alter table kv partition by range(k) (partition hot values from (minvalue) to ({0}), partition warm values from ({0}) to (maxvalue));'.format(hot_key)
-		cmd += "alter partition hot of table kv configure zone using constraints='\\''[+region=newyork]'\\'';"
-		cmd += "alter partition warm of table kv configure zone using constraints='\\''[-region=newyork]'\\'';"
-	
-	cmd += ('" | {0} sql --insecure --database=kv '
-			'--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip)
-	
-	call_remote(ip, cmd, "Failed to assign partition affinity")
+  cmd += ('" | {0} sql --insecure --database=kv '
+          '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip)
+
+  call_remote(ip, cmd, "Failed to assign partition affinity")
 
 
 def extract_config_params(config):
+  out_dir = config["out_dir"]
+  if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
-	out_dir = config["out_dir"]
-	if not os.path.exists(out_dir):
-		os.makedirs(out_dir)
+  nodes = config["warm_nodes"]
+  if config["use_hot_nodes_as_gateways"]:
+    nodes += config["hot_nodes"]
 
-	nodes = config["warm_nodes"]
-	if config["use_hot_nodes_as_gateways"]:
-		nodes += config["hot_nodes"]
+  b = config["benchmark"]
+  name = b["name"]
 
-	b = config["benchmark"]
-	name = b["name"]
+  urls = ["postgresql://root@{0}:26257?sslmode=disable".format(n["ip"])
+          for n in nodes]
+  urls = " ".join(urls)
 
-	urls = ["postgresql://root@{0}:26257?sslmode=disable".format(n["ip"])
-			for n in nodes]
-	urls = " ".join(urls)
+  workload_nodes = config["workload_nodes"]
 
-	workload_nodes = config["workload_nodes"]
-
-	return out_dir, nodes, b, name, urls, workload_nodes
+  return out_dir, nodes, b, name, urls, workload_nodes
 
 
 def run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=False, hot_key=None):
-	
-	i = 0
-	ps = []
-	for wn in workload_nodes:
-		args = parse_bench_args(b["run_args"], is_warmup=is_warmup, hot_key=hot_key)
-		cmd = "{0} workload run {1} {2} {3}".format(EXE, name, urls, args)
-		ip = wn["ip"]
+  i = 0
+  ps = []
+  for wn in workload_nodes:
+    args = parse_bench_args(b["run_args"], is_warmup=is_warmup, hot_key=hot_key)
+    cmd = "{0} workload run {1} {2} {3}".format(EXE, name, urls, args)
+    ip = wn["ip"]
 
-		if is_warmup:
+    if is_warmup:
 
-			# Call remote
-			cmd = "sudo ssh {0} '{1}'".format(ip, cmd)
-			print(cmd)
+      # Call remote
+      cmd = "sudo ssh {0} '{1}'".format(ip, cmd)
+      print(cmd)
 
-			ps.append(subprocess.Popen(shlex.split(cmd)))
+      ps.append(subprocess.Popen(shlex.split(cmd)))
 
-		else:
-			path = os.path.join(out_dir, "bench_out_{0}.txt".format(i))
+    else:
+      path = os.path.join(out_dir, "bench_out_{0}.txt".format(i))
 
-			p = call_remote_redirect_stdout(ip, cmd, "run_workload_err", path)
-			ps.append(p)
+      p = call_remote_redirect_stdout(ip, cmd, "run_workload_err", path)
+      ps.append(p)
 
-		i += 1
+    i += 1
 
-	for p in ps:
-		p.wait()
+  for p in ps:
+    p.wait()
 
 
 def prepopulate_cluster(config):
+  out_dir, nodes, b, name, urls, workload_nodes = extract_config_params(config)
+  init_workload(b, name, urls, workload_nodes)
+  set_database_settings(nodes, config["should_create_partition"], config["hot_key"])
 
-	out_dir, nodes, b, name, urls, workload_nodes = extract_config_params(config)
-	init_workload(b, name, urls, workload_nodes)
-	set_database_settings(nodes, config["should_create_partition"], config["hot_key"])
+  b_copy = copy.deepcopy(b)
+  b_copy["run_args"]["warmup_duration"] = 30
+  b_copy["run_args"]["read_percent"] = 0
 
-	b_copy = copy.deepcopy(b)
-	b_copy["run_args"]["warmup_duration"] = 30
-	b_copy["run_args"]["read_percent"] = 0
+  # populate with writes
+  hot_key = None
+  if "hot_key" in config:
+    hot_key = config["hot_key"]
+  run_workload(workload_nodes, b_copy, name, urls, out_dir, is_warmup=True, hot_key=hot_key)
 
-	# populate with writes
-	hot_key = None
-	if "hot_key" in config:
-		hot_key = config["hot_key"]
-	run_workload(workload_nodes, b_copy, name, urls, out_dir, is_warmup=True, hot_key=hot_key)
-
-	# real warmup
-	run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=True, hot_key=hot_key)
+  # real warmup
+  run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=True, hot_key=hot_key)
 
 
 def warmup_cluster(config):
+  out_dir, nodes, b, name, urls, workload_nodes = extract_config_params(config)
 
-	out_dir, nodes, b, name, urls, workload_nodes = extract_config_params(config)
+  if len(workload_nodes) == 0:
+    print("No workload nodes!")
+    return
 
-	if len(workload_nodes) == 0:
-		print("No workload nodes!")
-		return
+  if len(nodes) == 0:
+    print("No cluster nodes!")
+    return
 
-	if len(nodes) == 0:
-		print("No cluster nodes!")
-		return
+  # initialize workload on database
+  init_workload(b, name, urls, workload_nodes)
 
-	# initialize workload on database
-	init_workload(b, name, urls, workload_nodes)
+  # set database settings (hot key, replicas)
+  set_database_settings(nodes, config["should_create_partition"], config["hot_key"])
 
-	# set database settings (hot key, replicas)
-	set_database_settings(nodes, config["should_create_partition"], config["hot_key"])
-
-	# run workload
-	hot_key = None
-	if "hot_key" in config:
-		hot_key = config["hot_key"]
-	run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=True, hot_key=hot_key)
+  # run workload
+  hot_key = None
+  if "hot_key" in config:
+    hot_key = config["hot_key"]
+  run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=True, hot_key=hot_key)
 
 
 def run_bench(config):
+  out_dir, nodes, b, name, urls, workload_nodes = extract_config_params(config)
 
-	out_dir, nodes, b, name, urls, workload_nodes = extract_config_params(config)
-	
-	if not os.path.exists(out_dir):
-		os.makedirs(out_dir)
-		
-	save_params(config, out_dir)
-	
-	if len(workload_nodes) == 0:
-		print("No workload nodes!")
-		return
-		
-	if len(nodes) == 0:
-		print("No cluster nodes!")
-		return
+  if not os.path.exists(out_dir):
+    os.makedirs(out_dir)
 
-	hot_key = None
-	if "hot_key" in config:
-		hot_key = config["hot_key"]
-	run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=False, hot_key=hot_key)
-   
+  save_params(config, out_dir)
+
+  if len(workload_nodes) == 0:
+    print("No workload nodes!")
+    return
+
+  if len(nodes) == 0:
+    print("No cluster nodes!")
+    return
+
+  hot_key = None
+  if "hot_key" in config:
+    hot_key = config["hot_key"]
+  run_workload(workload_nodes, b, name, urls, out_dir, is_warmup=False, hot_key=hot_key)
