@@ -238,7 +238,8 @@ def init_experiment(config):
 
   # disable any cores
   if config["disable_cores"]:
-    disable_cores(config["disable_cores"], config["warm_nodes"] + config["hot_nodes"])
+    hosts = [node["ip"] for node in config["warm_nodes"] + config["hot_nodes"]]
+    disable_cores(config["disable_cores"], hosts)
 
   # Start hot node separately from warm nodes
   # start_cluster(config["hot_nodes"])
