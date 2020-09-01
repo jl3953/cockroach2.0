@@ -183,6 +183,9 @@ def create_experiment(fpath, config_filename, override=None):
   else:
     exp["should_create_partition"] = False
 
+  if "disable_cores" in config["cluster"]:
+    exp["disable_cores"] = json.loads(config["cluster"]["disable_cores"])
+
   if "keyspace" in config["benchmark"]:
     exp["benchmark"]["run_args"]["keyspace"] = json.loads(config["benchmark"]["keyspace"])
   else:
