@@ -150,3 +150,6 @@ def main():
     print("Enable core check worked for 16, err:{0}".format(e))
 
 
+if __name__ == "__main__":
+  main()
+
