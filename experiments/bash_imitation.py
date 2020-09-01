@@ -148,3 +148,7 @@ def main():
     enable_core(16, "node-1")
   except AssertionError as e:
     print("Enable core check worked for 16, err:{0}".format(e))
+
+
+if __name__ == "__main__":
+  main()
