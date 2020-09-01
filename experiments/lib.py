@@ -18,19 +18,19 @@ LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 
 
 def call(cmd, err_msg):
-    print(cmd)
-    p = subprocess.run(cmd, universal_newlines=True, shell=True)
-    if p.returncode:
-        print(p.stderr)
-        print(err_msg)
-        sys.exit(1)
-    else:
-        return p.stdout
+  print(cmd)
+  p = subprocess.run(cmd, universal_newlines=True, shell=True)
+  if p.returncode:
+    print(p.stderr)
+    print(err_msg)
+    sys.exit(1)
+  else:
+    return p.stdout
 
 
 def call_remote(host, cmd, err_msg):
-    cmd = "sudo ssh {0} '{1}'".format(host, cmd)
-    return call(cmd, err_msg)
+  cmd = "sudo ssh {0} '{1}'".format(host, cmd)
+  return call(cmd, err_msg)
 
 
 def call_remote_redirect_stdout(host, cmd, err_msg, path):
@@ -42,57 +42,57 @@ def call_remote_redirect_stdout(host, cmd, err_msg, path):
 
 
 def init_store(node):
-    ip = node["ip"]
+  ip = node["ip"]
 
-    cmd = "if [[ ! -e {0} ]]; then mkdir {0}; fi".format(STORE_DIR)
-    call_remote(ip, cmd, "Failed to initialize store")
+  cmd = "if [[ ! -e {0} ]]; then mkdir {0}; fi".format(STORE_DIR)
+  call_remote(ip, cmd, "Failed to initialize store")
 
-    cmd = ("if [[ $(! mount -l | grep {0}) != *{0}* ]]; "
-           "then mount -t tmpfs -o size=32g tmpfs {0}; fi").format(STORE_DIR)
-    call_remote(ip, cmd, "Failed to initialize store")
+  cmd = ("if [[ $(! mount -l | grep {0}) != *{0}* ]]; "
+         "then mount -t tmpfs -o size=32g tmpfs {0}; fi").format(STORE_DIR)
+  call_remote(ip, cmd, "Failed to initialize store")
 
 
 def kill_cockroach_node(node):
-    ip = node["ip"]
+  ip = node["ip"]
 
-    if "store" in node:
-        store = node["store"]
-    else:
-        store = None
+  if "store" in node:
+    store = node["store"]
+  else:
+    store = None
 
-    cmd = ("PID=$(! pgrep cockroach) "
-           "|| (sudo pkill -9 cockroach; while ps -p $PID;do sleep 1;done;)")
+  cmd = ("PID=$(! pgrep cockroach) "
+         "|| (sudo pkill -9 cockroach; while ps -p $PID;do sleep 1;done;)")
 
-    if store:
-        cmd = "({0}) && {1}".format(
-            cmd, "sudo rm -rf {0}".format(os.path.join(store, "*")))
+  if store:
+    cmd = "({0}) && {1}".format(
+      cmd, "sudo rm -rf {0}".format(os.path.join(store, "*")))
 
-    cmd = "ssh {0} '{1}'".format(ip, cmd)
-    print(cmd)
-    return subprocess.Popen(shlex.split(cmd))
+  cmd = "ssh {0} '{1}'".format(ip, cmd)
+  print(cmd)
+  return subprocess.Popen(shlex.split(cmd))
 
 
 def start_cockroach_node(node, join=None):
-    ip = node["ip"]
-    store = node["store"]
-    region = node["region"]
+  ip = node["ip"]
+  store = node["store"]
+  region = node["region"]
 
-    cmd = ("{0} start --insecure "
-           "--advertise-addr={1} "
-           "--store={2} "
-           "--locality=region={3} "
-           "--cache=.25 "
-           "--max-sql-memory=.25 "
-           "--log-file-verbosity=2 "
-           "--background"
-           ).format(EXE, ip, store, region)
+  cmd = ("{0} start --insecure "
+         "--advertise-addr={1} "
+         "--store={2} "
+         "--locality=region={3} "
+         "--cache=.25 "
+         "--max-sql-memory=.25 "
+         "--log-file-verbosity=2 "
+         "--background"
+         ).format(EXE, ip, store, region)
 
-    if join:
-        cmd = "{0} --join={1}:26257".format(cmd, join)
+  if join:
+    cmd = "{0} --join={1}:26257".format(cmd, join)
 
-    cmd = "ssh -tt {0} '{1}' && stty sane".format(ip, cmd)
-    print(cmd)
-    return subprocess.Popen(cmd, shell=True)
+  cmd = "ssh -tt {0} '{1}' && stty sane".format(ip, cmd)
+  print(cmd)
+  return subprocess.Popen(cmd, shell=True)
 
 
 def query_for_shards(ip, config):
@@ -112,16 +112,16 @@ def query_for_shards(ip, config):
 
 
 def set_cluster_settings(node):
-    ip = node["ip"]
-    cmd = ('echo "'
-           # 'set cluster setting kv.range_merge.queue_enabled = false;'
-           # 'set cluster setting kv.range_split.by_load_enabled = false;'
-           'set cluster setting kv.raft_log.disable_synchronization_unsafe = true;'
-           'alter range default configure zone using num_replicas = 1;'
-           '" | {0} sql --insecure '
-           '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip)
+  ip = node["ip"]
+  cmd = ('echo "'
+         # 'set cluster setting kv.range_merge.queue_enabled = false;'
+         # 'set cluster setting kv.range_split.by_load_enabled = false;'
+         'set cluster setting kv.raft_log.disable_synchronization_unsafe = true;'
+         'alter range default configure zone using num_replicas = 1;'
+         '" | {0} sql --insecure '
+         '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip)
 
-    call_remote(ip, cmd, "Failed to set cluster settings.")
+  call_remote(ip, cmd, "Failed to set cluster settings.")
 
 
 def grep_for_term(config, term):
@@ -166,67 +166,72 @@ def start_cluster(nodes):
     ps.append(start_cockroach_node(n, join=first["ip"]))
 
     for p in ps:
-        p.wait()
+      p.wait()
 
     set_cluster_settings(first)
 
 
 def build_cockroach(node, commit):
-    cmd = ("ssh {0} 'export GOPATH=/usr/local/temp/go "
-           "&& set -x && cd {1} && git fetch origin {2} && git checkout {2} && git pull origin {2} && git submodule update --init "
-           "&& (export PATH=$PATH:/usr/local/go/bin && echo $PATH && make build || (make clean && make build)) && set +x'") \
-           .format(node["ip"], COCKROACH_DIR, commit)
+  cmd = ("ssh {0} 'export GOPATH=/usr/local/temp/go "
+         "&& set -x && cd {1} && git fetch origin {2} && git checkout {2} && git pull origin {2} && git submodule update --init "
+         "&& (export PATH=$PATH:/usr/local/go/bin && echo $PATH && make build || (make clean && make build)) && set +x'") \
+    .format(node["ip"], COCKROACH_DIR, commit)
 
-    return subprocess.Popen(shlex.split(cmd))
+  return subprocess.Popen(shlex.split(cmd))
 
 
 def build_cockroach_commit(nodes, commit):
-    ps = [build_cockroach(n, commit) for n in nodes]
+  ps = [build_cockroach(n, commit) for n in nodes]
 
-    for p in ps:
-        p.wait()
+  for p in ps:
+    p.wait()
 
 
 def cleanup_previous_experiment(config):
-    ps = []
-    for n in config["workload_nodes"]:
-        p = kill_cockroach_node(n)
-        ps.append(p)
+  ps = []
+  for n in config["workload_nodes"]:
+    p = kill_cockroach_node(n)
+    ps.append(p)
 
-    for n in config["hot_nodes"] + config["warm_nodes"]:
-        p = kill_cockroach_node(n)
-        ps.append(p)
+  for n in config["hot_nodes"] + config["warm_nodes"]:
+    p = kill_cockroach_node(n)
+    ps.append(p)
 
-    for p in ps:
-        p.wait()
+  for p in ps:
+    p.wait()
 
 
 def set_hot_keys(nodes, keys):
-    if len(keys) == 0:
-        return
+  if len(keys) == 0:
+    return
 
-    values = ', '.join(map(lambda k: "({})".format(k), keys))
+  values = ', '.join(map(lambda k: "({})".format(k), keys))
 
-    for n in nodes:
-      ip = n["ip"]
-      cmd = ('echo "'
-             'alter table kv.kv hotkey at values {2};'
-             '" | {0} sql --insecure '
-             '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip, values)
+  for n in nodes:
+    ip = n["ip"]
+    cmd = ('echo "'
+           'alter table kv.kv hotkey at values {2};'
+           '" | {0} sql --insecure '
+           '--url="postgresql://root@{1}?sslmode=disable"').format(EXE, ip, values)
 
-      call_remote(ip, cmd, "Failed to set cluster settings.")
+    call_remote(ip, cmd, "Failed to set cluster settings.")
 
 
-def disable_cores(cores, *hosts):
-  for host in hosts:
+def modify_cores(cores, is_enable_cores, *args):
+  for host in args:
     for i in range(1, cores + 1):
-      bash_imitation.disable_core(i, host)
+      if is_enable_cores:
+        bash_imitation.enable_core(i, host)
+      else:
+        bash_imitation.disable_core(i, host)
 
 
-def enable_cores(cores, *hosts):
-  for host in hosts:
-    for i in range(1, cores + 1):
-      bash_imitation.enable_core(i, host)
+def disable_cores(cores, *args):
+  modify_cores(cores, False, args)
+
+
+def enable_cores(cores, *args):
+  modify_cores(cores, True, args)
 
 
 def init_experiment(config):
@@ -248,100 +253,100 @@ def init_experiment(config):
 
 
 def save_params(exp_params, out_dir):
-    params = {
-        "exp_params": exp_params
-    }
+  params = {
+    "exp_params": exp_params
+  }
 
-    path = os.path.join(out_dir, "params.json")
-    with open(path, "w") as f:
-        json.dump(params, f, indent=4)
+  path = os.path.join(out_dir, "params.json")
+  with open(path, "w") as f:
+    json.dump(params, f, indent=4)
 
 
 def read_params(out_dir):
-    path = os.path.join(out_dir, "params.json")
-    with open(path, "r") as f:
-        params = json.load(f)
-        return params["exp_params"]
+  path = os.path.join(out_dir, "params.json")
+  with open(path, "r") as f:
+    params = json.load(f)
+    return params["exp_params"]
 
 
 def vary_zipf_skew(config, skews):
-    if ("benchmark" in config and
-        "run_args" in config["benchmark"] and
-        "distribution" in config["benchmark"]["run_args"] and
-        "type" in config["benchmark"]["run_args"]["distribution"] and
-        config["benchmark"]["run_args"]["distribution"]["type"] == "zipf"):
-    
-        out_dir = config["out_dir"]
-        exps = []
-        
-        for i in range(len(skews)):
-            s = skews[i]
-            
-            c = config["benchmark"]["run_args"]["concurrency"][i]
+  if ("benchmark" in config and
+    "run_args" in config["benchmark"] and
+    "distribution" in config["benchmark"]["run_args"] and
+    "type" in config["benchmark"]["run_args"]["distribution"] and
+    config["benchmark"]["run_args"]["distribution"]["type"] == "zipf"):
 
-            e = copy.deepcopy(config)
-            if "params" not in e["benchmark"]["run_args"]["distribution"]:
-                e["benchmark"]["run_args"]["distribution"]["params"] = {}
+    out_dir = config["out_dir"]
+    exps = []
 
-            if "skew" in e["benchmark"]["run_args"]["distribution"]["params"]:
-                print("WARNING: Overwriting skew param in experiment config!")
+    for i in range(len(skews)):
+      s = skews[i]
 
-            e["benchmark"]["run_args"]["distribution"]["params"]["skew"] = s
-            e["benchmark"]["run_args"]["concurrency"] = c
-            e["out_dir"] = os.path.join(out_dir, "skew-{0}".format(i))
-            exps.append(e)
+      c = config["benchmark"]["run_args"]["concurrency"][i]
 
-        return exps
+      e = copy.deepcopy(config)
+      if "params" not in e["benchmark"]["run_args"]["distribution"]:
+        e["benchmark"]["run_args"]["distribution"]["params"] = {}
 
-    else:
-        raise ValueError(
-            "Passed experiment that does not use Zipf distribution!")
+      if "skew" in e["benchmark"]["run_args"]["distribution"]["params"]:
+        print("WARNING: Overwriting skew param in experiment config!")
+
+      e["benchmark"]["run_args"]["distribution"]["params"]["skew"] = s
+      e["benchmark"]["run_args"]["concurrency"] = c
+      e["out_dir"] = os.path.join(out_dir, "skew-{0}".format(i))
+      exps.append(e)
+
+    return exps
+
+  else:
+    raise ValueError(
+      "Passed experiment that does not use Zipf distribution!")
 
 
 def parse_bench_args(bench_config, is_warmup=False, hot_key=None):
-    args = []
-    if "duration" in bench_config:
-      if is_warmup:
-        args.append("--duration={}s".format(bench_config["warmup_duration"]))
-      else:
-        args.append("--duration={}s".format(bench_config["duration"]))
-    
-    if "drop" in bench_config and bench_config["drop"] is True:
-        args.append("--drop")
+  args = []
+  if "duration" in bench_config:
+    if is_warmup:
+      args.append("--duration={}s".format(bench_config["warmup_duration"]))
+    else:
+      args.append("--duration={}s".format(bench_config["duration"]))
 
-    if "concurrency" in bench_config:
-        args.append("--concurrency={}".format(bench_config["concurrency"]))
+  if "drop" in bench_config and bench_config["drop"] is True:
+    args.append("--drop")
 
-    if "splits" in bench_config:
-        args.append("--splits={}".format(bench_config["splits"]))
+  if "concurrency" in bench_config:
+    args.append("--concurrency={}".format(bench_config["concurrency"]))
 
-    if "read_percent" in bench_config:
-        args.append("--read-percent={}".format(bench_config["read_percent"]))
+  if "splits" in bench_config:
+    args.append("--splits={}".format(bench_config["splits"]))
 
-    if "n_statements_per_txn" in bench_config:
-        args.append("--stmt-per-txn={}".format(bench_config["n_statements_per_txn"]))
+  if "read_percent" in bench_config:
+    args.append("--read-percent={}".format(bench_config["read_percent"]))
 
-    if "n_keys_per_statement" in bench_config:
-        args.append("--batch={}".format(bench_config["n_keys_per_statement"]))
-        
-    if "distribution" in bench_config:
-        d = bench_config["distribution"]
-        params = d["params"]
+  if "n_statements_per_txn" in bench_config:
+    args.append("--stmt-per-txn={}".format(bench_config["n_statements_per_txn"]))
 
-        if d["type"] == "zipf":
-            args.append("--zipfian")
-            args.append("--s={1}".format(args, params["skew"]))
-            
-            if "use_original_zipfian" in bench_config:
-                args.append("--useOriginal={}".format(bench_config["use_original_zipfian"]))
+  if "n_keys_per_statement" in bench_config:
+    args.append("--batch={}".format(bench_config["n_keys_per_statement"]))
 
-    if hot_key:
-        args.append("--hotkey={}".format(hot_key))
+  if "distribution" in bench_config:
+    d = bench_config["distribution"]
+    params = d["params"]
 
-    if "keyspace" in bench_config:
-        args.append("--keyspace={}".format(bench_config["keyspace"]))
+    if d["type"] == "zipf":
+      args.append("--zipfian")
+      args.append("--s={1}".format(args, params["skew"]))
 
-    return " ".join(args)
+      if "use_original_zipfian" in bench_config:
+        args.append("--useOriginal={}".format(bench_config["use_original_zipfian"]))
+
+  if hot_key:
+    args.append("--hotkey={}".format(hot_key))
+
+  if "keyspace" in bench_config:
+    args.append("--keyspace={}".format(bench_config["keyspace"]))
+
+  return " ".join(args)
 
 
 def init_workload(b, name, urls, workload_nodes):
