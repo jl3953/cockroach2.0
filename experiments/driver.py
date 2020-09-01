@@ -78,6 +78,10 @@ def generate_skew_curve(exp, skews, view=False, collect=False, prepopulate=False
     if not view:
       lib.run_bench(e)
 
+  if exp["cluster"]["disable_cores"]:
+    lib.enable_cores(exp["cluster"]["disable_cores"],
+                     exp["cluster"]["warm_nodes"] + exp["cluster"]["hot_nodes"])
+
 
 def plot(exp, skews, driver_node, csv_path, csv_file,
          view=False, collect=False, take_over_time=False):
