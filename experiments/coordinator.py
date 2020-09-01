@@ -175,7 +175,6 @@ def call_latency_throughput(baseline_file, lt_file, params_file, csv_file, skew,
   """ Calls the latency throughput script.
 
 	Args:
-		location (str): absolute path of location directory.
 		baseline_file (str): original params config file, abs path
 		lt_file (str): latency throughput params config, abs path
 		params_file (str): abs path of param output file
@@ -433,7 +432,7 @@ def main():
         exp_lib.write_skew_concurrency_pair(s, concurrency, checkpoint)
 
         move_logs(args.config, lt_logs)
-        bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, trial, s)
+        bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, str(trial), s)
 
       # param_outputs.append(skews_for_trial)
 
@@ -458,7 +457,7 @@ def main():
       # assume that the abs path is just the joining of the dir and filename.
       driver(args.config, override_file, csv_dir, driver_file)
       move_logs(args.config, driver_logs)
-      bash_imitation.gnuplot(DRIVER_GNUPLOT, driver_csv, graph_dir, trial)
+      bash_imitation.gnuplot(DRIVER_GNUPLOT, driver_csv, graph_dir, str(trial))
 
     calculate_and_plot_box_and_whiskers(csvs, csv_dir, graph_dir)
 
