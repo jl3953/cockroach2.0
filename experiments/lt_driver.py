@@ -120,6 +120,10 @@ def find_optimal_concurrency(exp, variations, skew, is_view_only):
     end = concurrency + step_size
     step_size = int(step_size / 2)
 
+  if exp["cluster"]["disable_cores"]:
+    hosts = [node["ip"] for node in exp["cluster"]["warm_nodes"] + exp["cluster"]["hot_nodes"]]
+    lib.enable_cores(exp["cluster"]["disable_cores"], hosts)
+
   max_concurrency = last_adjustments(max_concurrency)
   return max_concurrency, data
 
