@@ -25,8 +25,10 @@ plot "lt_one_node.csv" using "ops/sec(cum)":"p50(ms)" title "1 node" with linesp
 		 "lt_three_nodes.csv" using "ops/sec(cum)":"p50(ms)" title "3 nodes" with linespoint
 
 set output "lt_comparison_one_node_keys.png"
-plot "lt_one_node.csv" using "ops/sec(cum)":"p50(ms)" title "6 keys" with linespoint,\
-		 "lt_one_node_1key.csv"  using "ops/sec(cum)":"p50(ms)" title "1 key" with linespoint,\
+plot "lt_one_node_1key.csv"  using "ops/sec(cum)":"p50(ms)" title "1 key" with linespoint,\
 		 "lt_one_node_2keys.csv"  using "ops/sec(cum)":"p50(ms)" title "2 keys" with linespoint,\
-		 "lt_one_node_3keys.csv"  using "ops/sec(cum)":"p50(ms)" title "3 keys" with linespoint
+		 "lt_one_node_3keys.csv"  using "ops/sec(cum)":"p50(ms)" title "3 keys" with linespoint,\
+		 "lt_one_node_4keys.csv"  using "ops/sec(cum)":"p50(ms)" title "4 keys" with linespoint,\
+		 "lt_one_node_5keys.csv"  using "ops/sec(cum)":"p50(ms)" title "5 keys" with linespoint,\
+		 "lt_one_node_6keys.csv"  using "ops/sec(cum)":"p50(ms)" title "6 keys" with linespoint
 
