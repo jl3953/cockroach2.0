@@ -1,26 +1,37 @@
 import configparser
+import datetime
 import itertools
+import os
+
+COCKROACHDB_DIR = "/usr/local/temp/go/src/github.com/cockroachdb/cockroach"
+TEST_PATH = os.path.join(COCKROACHDB_DIR, "tests")
+TEST_CONFIG_PATH = os.path.join(TEST_PATH, "config")
 
 
 class Node:
+
+  """Represents information about a node."""
 
   def __init__(self, ip_enum, region=None, store=None):
     """
 
     :param ip_enum: (int) enumerated node
     :param region: (str) newyork, london, tokyo, etc
-    :param store: (sr) /data
+    :param store: (str) usually just /data
     """
 
     self.ip = "192.168.1." + str(ip_enum)
-    self.region = region
-    self.store = store
+    if region:
+      self.region = region
+    if store:
+      self.store = store
 
-
-
+  def __str__(self):
+    return str(vars(self))
 
 
 class ConfigObject:
+  """Represents different combinations of configuration parameters."""
 
   def __init__(self):
 
@@ -39,6 +50,7 @@ class ConfigObject:
     # self.warm_nodes = [] # to be populated
     self.hot_key_threshold = [-1]
     self.should_create_partition = [False]
+    self.disable_cores = [2, 4, 6]
 
     # benchmark
     self.keyspace = [1000000]
@@ -51,8 +63,8 @@ class ConfigObject:
     self.distribution_type = ["zipf"]
     self.skews = [0, 0.9]
 
-  def enumerate_configs(self):
-    """
+  def generate_config_combinations(self):
+    """Generates the trial configuration parameters for a single run, lists all in a list of dicts.
 
     :return: a list of dictionaries of combinations
     """
@@ -70,13 +82,40 @@ class ConfigObject:
       driver_node_ip_enum = config_dict["__driver_node_ip_enum"]
       num_workload_nodes = config_dict["__num_workload_nodes"]
       num_warm_nodes = config_dict["__num_warm_nodes"]
-      config_dict["workload_nodes"] = self.enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes)
-      config_dict["warm_nodes"] = self.enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum, num_workload_nodes)
+      config_dict["workload_nodes"] = ConfigObject.enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes)
+      config_dict["warm_nodes"] = ConfigObject.enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum,
+                                                                    num_workload_nodes)
 
     return combinations
 
+  def generate_all_config_files(self):
+    """Generates all configuration files with different combinations of parameters.
+    :return: None
+    """
+    config_combos = self.generate_config_combinations()
+    for config_dict in config_combos:
+      ini_filename = ConfigObject.generate_ini_filename(suffix=config_dict["logs_dir"])
+      _ = ConfigObject.write_config_to_file(config_dict, ini_filename)
+
   @staticmethod
-  def output_config(config_dict, ini_filename):
+  def generate_ini_filename(suffix=None):
+    """ Generates a filename for ini using datetime as unique id
+
+    :param suffix: (str) suffix for human readability
+    :return: (str) full filepath for config file
+    """
+
+    unique_prefix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    return os.path.join(TEST_CONFIG_PATH, unique_prefix + suffix)
+
+  @staticmethod
+  def write_config_to_file(config_dict, ini_filename):
+    """ Writes a configuration to an ini file.
+
+    :param config_dict: (Dict) config to write
+    :param ini_filename: (str) fpath to ini file
+    :return: (str) ini_file written to
+    """
     config = configparser.ConfigParser()
     config["DEFAULT"] = config_dict
     with open(ini_filename, "w") as ini:
@@ -85,7 +124,7 @@ class ConfigObject:
 
   @staticmethod
   def enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes):
-    """ Populates workload nodes
+    """ Populates workload nodes.
     :rtype: List(Node)
     :param driver_node_ip_enum: (int) enum that driver node starts at
     :param num_workload_nodes: (int) number of workload nodes wanted
@@ -102,7 +141,7 @@ class ConfigObject:
 
   @staticmethod
   def enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum, num_already_enumerated_nodes):
-    """
+    """ Populates warm nodes.
 
     :param num_warm_nodes: (int)
     :param driver_node_ip_enum: (int)
