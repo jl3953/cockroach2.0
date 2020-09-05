@@ -3,31 +3,11 @@ import datetime
 import itertools
 import os
 
+from src import node
+
 COCKROACHDB_DIR = "/usr/local/temp/go/src/github.com/cockroachdb/cockroach"
 TEST_PATH = os.path.join(COCKROACHDB_DIR, "tests")
 TEST_CONFIG_PATH = os.path.join(TEST_PATH, "config")
-
-
-class Node:
-
-  """Represents information about a node."""
-
-  def __init__(self, ip_enum, region=None, store=None):
-    """
-
-    :param ip_enum: (int) enumerated node
-    :param region: (str) newyork, london, tokyo, etc
-    :param store: (str) usually just /data
-    """
-
-    self.ip = "192.168.1." + str(ip_enum)
-    if region:
-      self.region = region
-    if store:
-      self.store = store
-
-  def __str__(self):
-    return str(vars(self))
 
 
 class ConfigObject:
@@ -42,9 +22,9 @@ class ConfigObject:
 
     # cluster
     self.cockroach_commit = ["master"]
-    self.__num_warm_nodes = [4]
-    self.__num_workload_nodes = [6]
-    self.__driver_node_ip_enum = [1]
+    self.num_warm_nodes = [4]
+    self.num_workload_nodes = [6]
+    self.driver_node_ip_enum = [1]
 
     # self.workload_nodes = [] # to be populated
     # self.warm_nodes = [] # to be populated
@@ -79,9 +59,9 @@ class ConfigObject:
       combinations.append(config_dict)
 
     for config_dict in combinations:
-      driver_node_ip_enum = config_dict["__driver_node_ip_enum"]
-      num_workload_nodes = config_dict["__num_workload_nodes"]
-      num_warm_nodes = config_dict["__num_warm_nodes"]
+      driver_node_ip_enum = config_dict["driver_node_ip_enum"]
+      num_workload_nodes = config_dict["num_workload_nodes"]
+      num_warm_nodes = config_dict["num_warm_nodes"]
       config_dict["workload_nodes"] = ConfigObject.enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes)
       config_dict["warm_nodes"] = ConfigObject.enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum,
                                                                     num_workload_nodes)
@@ -98,15 +78,19 @@ class ConfigObject:
       _ = ConfigObject.write_config_to_file(config_dict, ini_filename)
 
   @staticmethod
-  def generate_ini_filename(suffix=None):
-    """ Generates a filename for ini using datetime as unique id
+  def generate_ini_filename(suffix=None, custom_unique_prefix=None):
+    """Generates a filename for ini using datetime as unique id.
 
     :param suffix: (str) suffix for human readability
+    :param custom_unique_prefix: use a custom prefix. If none, use datetime.
     :return: (str) full filepath for config file
     """
 
     unique_prefix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    return os.path.join(TEST_CONFIG_PATH, unique_prefix + suffix)
+    if custom_unique_prefix:
+      unique_prefix = custom_unique_prefix
+    ini = unique_prefix + "_" + suffix + ".ini"
+    return os.path.join(TEST_CONFIG_PATH, ini)
 
   @staticmethod
   def write_config_to_file(config_dict, ini_filename):
@@ -134,8 +118,8 @@ class ConfigObject:
     result = []
     for i in range(num_workload_nodes):
       ip_enum = i + start_ip
-      node = Node(ip_enum)
-      result.append(node)
+      n = node.Node(ip_enum)
+      result.append(n)
 
     return result
 
@@ -152,11 +136,11 @@ class ConfigObject:
     start_ip_enum = driver_node_ip_enum + num_already_enumerated_nodes
 
     # regioned nodes
-    regioned_nodes = [Node(start_ip_enum, "newyork", "/data")]
+    regioned_nodes = [node.Node(start_ip_enum, "newyork", "/data")]
     if num_warm_nodes >= 2:
-      regioned_nodes.append(Node(start_ip_enum + 1, "london", "/data"))
+      regioned_nodes.append(node.Node(start_ip_enum + 1, "london", "/data"))
     if num_warm_nodes >= 3:
-      regioned_nodes.append(Node(start_ip_enum + 2, "tokyo", "/data"))
+      regioned_nodes.append(node.Node(start_ip_enum + 2, "tokyo", "/data"))
 
     # nodes that don't have regions
     remaining_nodes_start_ip = start_ip_enum + 3
@@ -164,7 +148,7 @@ class ConfigObject:
     remaining_nodes = []
     for i in range(remaining_num_warm_nodes):
       ip_enum = i + remaining_nodes_start_ip
-      node = Node(ip_enum, "singapore", "/data")
-      remaining_nodes.append(node)
+      n = node.Node(ip_enum, "singapore", "/data")
+      remaining_nodes.append(n)
 
     return regioned_nodes + remaining_nodes
