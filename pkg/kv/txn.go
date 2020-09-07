@@ -645,7 +645,7 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 
 func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, hlc.Timestamp) {
 
-	address := "node-30:50051"
+	address := "node-29:50051"
 	defaultName := "world"
 
 	// Set up a connection to the server
