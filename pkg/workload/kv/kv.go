@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/pflag"
 	"hash"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -372,7 +371,8 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 
 	// sort the keys first
 	argsInt := make([]int64, batchSize)
-	for i := 0; i < batchSize; i++ {
+	argsInt[0] = 0
+	/* for i := 0; i < batchSize; i++ {
 		argsInt[i] = generateKey()
 	}
 	sort.Sort(byInt(argsInt))
@@ -383,7 +383,7 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 			argsInt[i] = argsInt[0]
 		}
 	}
-	sort.Sort(byInt(argsInt))
+	sort.Sort(byInt(argsInt))*/
 
 	return argsInt
 }
