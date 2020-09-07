@@ -250,8 +250,7 @@ def init_experiment(config):
 
   # Start hot node separately from warm nodes
   # start_cluster(config["hot_nodes"])
-  if config["disable_cores"]:
-    start_cluster(config["warm_nodes"] + config["hot_nodes"])  # no, start them together for now
+  start_cluster(config["warm_nodes"] + config["hot_nodes"])  # no, start them together for now
 
 
 def save_params(exp_params, out_dir):
