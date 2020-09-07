@@ -185,6 +185,8 @@ def create_experiment(fpath, config_filename, override=None):
 
   if "disable_cores" in config["cluster"]:
     exp["disable_cores"] = json.loads(config["cluster"]["disable_cores"])
+  else:
+    exp["disable_cores"] = None
 
   if "keyspace" in config["benchmark"]:
     exp["benchmark"]["run_args"]["keyspace"] = json.loads(config["benchmark"]["keyspace"])
