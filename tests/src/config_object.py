@@ -62,9 +62,12 @@ class ConfigObject:
       driver_node_ip_enum = config_dict["driver_node_ip_enum"]
       num_workload_nodes = config_dict["num_workload_nodes"]
       num_warm_nodes = config_dict["num_warm_nodes"]
-      config_dict["workload_nodes"] = ConfigObject.enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes)
-      config_dict["warm_nodes"] = ConfigObject.enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum,
-                                                                    num_workload_nodes)
+
+      workload_nodes = ConfigObject.enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes)
+      config_dict["workload_nodes"] = [str(n) for n in workload_nodes]
+
+      warm_nodes = ConfigObject.enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum, num_workload_nodes)
+      config_dict["warm_nodes"] = [str(n) for n in warm_nodes]
 
     return combinations
 
@@ -86,7 +89,7 @@ class ConfigObject:
     :return: (str) full filepath for config file
     """
 
-    unique_prefix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    unique_prefix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     if custom_unique_prefix:
       unique_prefix = custom_unique_prefix
     ini = unique_prefix + "_" + suffix + ".ini"
@@ -152,3 +155,12 @@ class ConfigObject:
       remaining_nodes.append(n)
 
     return regioned_nodes + remaining_nodes
+
+
+def main():
+  config_object = ConfigObject()
+  config_object.generate_all_config_files()
+
+
+if __name__ == "__main__":
+  main()
