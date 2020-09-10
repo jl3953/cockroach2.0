@@ -36,6 +36,6 @@ def modify_core(node, core_num, is_enable=False):
     raise AssertionError("Cannot specify core 0 or less")
 
   cmd = "echo {0} | tee /sys/devices/system/cpu/cpu{1}/online".format(1 if is_enable else 0, core_num)
-  cmd = "sudo ssh {0} '{1}".format(node, cmd)
+  cmd = "sudo ssh {0} '{1}'".format(node, cmd)
   subprocess.Popen(shlex.split(cmd))
   # call_remote(node, cmd)
