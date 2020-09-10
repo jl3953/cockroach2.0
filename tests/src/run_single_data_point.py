@@ -95,7 +95,7 @@ def enable_cores(nodes, cores):
 def modify_cores(nodes, cores, is_enable_cores=False):
   for node in nodes:
     for i in range(1, cores + 1):
-      system_utils.modify_core(node, i, is_enable_cores)
+      system_utils.modify_core(node["ip"], i, is_enable_cores)
 
 
 def kill_cockroachdb_node(node):

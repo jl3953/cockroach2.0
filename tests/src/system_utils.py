@@ -34,5 +34,5 @@ def modify_core(node, core_num, is_enable=False):
   elif core_num <= 0:
     raise AssertionError("Cannot specify core 0 or less")
 
-  cmd = "echo {0} | tee /sys/devices/system/cpu/cpu{0}/online".format(1 if is_enable else 0)
+  cmd = "echo {0} | tee /sys/devices/system/cpu/cpu{1}/online".format(node, 1 if is_enable else 0)
   call_remote(node, cmd)
