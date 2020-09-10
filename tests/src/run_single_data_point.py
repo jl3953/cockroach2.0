@@ -156,9 +156,9 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
                  for n in server_nodes]
 
   # warmup and trial run commands are the same
-  args = [" --concurrency {}".format(concurrency), " --read-percent={}".format(read_percent),
-          " --batch={}".format(n_keys_per_statement), " --zipfian --s={}".format(skew),
-          " --keyspace={}".format(keyspace)]
+  args = ["--concurrency {}".format(concurrency), "--read-percent={}".format(read_percent),
+          "--batch={}".format(n_keys_per_statement), "--zipfian --s={}".format(skew),
+          "--keyspace={}".format(keyspace)]
   cmd = "{0} workload run kv {1} {2}".format(EXE, " ".join(server_urls), " ".join(args))
 
   if mode == RunMode.WARMUP_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
