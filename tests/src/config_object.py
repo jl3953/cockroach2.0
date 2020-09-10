@@ -1,12 +1,10 @@
-import configparser
 import datetime
 import itertools
 import os
 
-from src import node
+from src import node, config_io, constants
 
-COCKROACHDB_DIR = "/usr/local/temp/go/src/github.com/cockroachdb/cockroach"
-TEST_PATH = os.path.join(COCKROACHDB_DIR, "tests")
+TEST_PATH = os.path.join(constants.COCKROACHDB_DIR, "tests")
 TEST_CONFIG_PATH = os.path.join(TEST_PATH, "config")
 
 
@@ -28,11 +26,13 @@ class ConfigObject:
 
     # self.workload_nodes = [] # to be populated
     # self.warm_nodes = [] # to be populated
+    self.hot_node = []
     self.hot_key_threshold = [-1]
     self.should_create_partition = [False]
     self.disable_cores = [2, 4, 6]
 
     # benchmark
+    self.name = "kv"
     self.keyspace = [1000000]
     # self.concurrency = [] # to be populated
     self.warm_up_duration = [10]  # in seconds
@@ -78,7 +78,7 @@ class ConfigObject:
     config_combos = self.generate_config_combinations()
     for config_dict in config_combos:
       ini_filename = ConfigObject.generate_ini_filename(suffix=config_dict["logs_dir"])
-      _ = ConfigObject.write_config_to_file(config_dict, ini_filename)
+      _ = config_io.write_config_to_file(config_dict, ini_filename)
 
   @staticmethod
   def generate_ini_filename(suffix=None, custom_unique_prefix=None):
@@ -94,20 +94,6 @@ class ConfigObject:
       unique_prefix = custom_unique_prefix
     ini = unique_prefix + "_" + suffix + ".ini"
     return os.path.join(TEST_CONFIG_PATH, ini)
-
-  @staticmethod
-  def write_config_to_file(config_dict, ini_filename):
-    """ Writes a configuration to an ini file.
-
-    :param config_dict: (Dict) config to write
-    :param ini_filename: (str) fpath to ini file
-    :return: (str) ini_file written to
-    """
-    config = configparser.ConfigParser()
-    config["DEFAULT"] = config_dict
-    with open(ini_filename, "w") as ini:
-      config.write(ini)
-    return ini_filename
 
   @staticmethod
   def enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes):
