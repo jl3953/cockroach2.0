@@ -26,3 +26,13 @@ def call_remote(host, cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT):
   """
   cmd = "sudo ssh {0} '{1}'".format(host, cmd)
   return call(cmd, stdout, stderr)
+
+
+def modify_core(node, core_num, is_enable=False):
+  if core_num >= 16:
+    raise AssertionError("Cannot specify core larger than 15")
+  elif core_num <= 0:
+    raise AssertionError("Cannot specify core 0 or less")
+
+  cmd = "echo {0} | tee /sys/devices/system/cpu/cpu{0}/online".format(1 if is_enable else 0)
+  call_remote(node, cmd)

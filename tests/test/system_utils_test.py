@@ -1,9 +1,7 @@
 import io
 import os
 import subprocess
-import sys
 import unittest
-from unittest import mock
 
 from src import system_utils
 
