@@ -142,7 +142,7 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
                     n_keys_per_statement, skew, log_dir):
   server_urls = ["postgresql://root@{0}:26257?sslmode=disable".format(n["ip"])
                  for n in server_nodes]
-  args = [" --concurrency {}".format(concurrency), " --read_percent={}".format(read_percent),
+  args = [" --concurrency {}".format(concurrency), " --read-percent={}".format(read_percent),
           " --batch={}".format(n_keys_per_statement), " --zipfian --s={}".format(skew),
           " --keyspace={}".format(keyspace)]
   cmd = "{0} workload run kv {1} {2}".format(EXE, " ".join(server_urls), " ".join(args))
