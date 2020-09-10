@@ -1,4 +1,5 @@
 import configparser
+import json
 
 
 def write_config_to_file(config_dict, ini_fpath):
@@ -9,7 +10,7 @@ def write_config_to_file(config_dict, ini_fpath):
   :return: (str) ini_file written to
   """
   config = configparser.ConfigParser()
-  config["DEFAULT"] = config_dict
+  config["DEFAULT"] = {key: json.dumps(value) for key, value in config_dict.items()}
   with open(ini_fpath, "w") as ini:
     config.write(ini)
   return ini_fpath
@@ -24,4 +25,8 @@ def read_config_from_file(ini_fpath):
   """
   config = configparser.ConfigParser()
   config.read(ini_fpath)
-  return config["DEFAULT"]
+
+  result = {}
+  for key in config["DEFAULT"]:
+    result[key] = json.loads(config["DEFAULT"][key])
+  return result

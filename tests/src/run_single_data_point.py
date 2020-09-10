@@ -2,10 +2,18 @@ import os
 import shlex
 import subprocess
 
+import enum
+
 import constants
 import system_utils
 
 EXE = os.path.join(constants.COCKROACHDB_DIR, "cockroach")
+
+
+class RunMode(enum.Enum):
+  WARMUP_ONLY = 1
+  TRIAL_RUN_ONLY = 2
+  WARMUP_AND_TRIAL_RUN = 3
 
 
 def set_cluster_settings_on_single_node(node):
@@ -15,7 +23,7 @@ def set_cluster_settings_on_single_node(node):
          'set cluster setting kv.raft_log.disable_synchronization_unsafe = true;'
          'alter range default configure zone using num_replicas = 1;'
          '" | {0} sql --insecure '
-         '--url="postgresql://root@{1}?sslmode=disable"').format(EXE)
+         '--url="postgresql://root@{0}?sslmode=disable"').format(EXE, node["ip"])
   system_utils.call_remote(node["ip"], cmd)
 
 
@@ -93,9 +101,13 @@ def enable_cores(nodes, cores):
 
 
 def modify_cores(nodes, cores, is_enable_cores=False):
+  processes = []
   for node in nodes:
     for i in range(1, cores + 1):
-      system_utils.modify_core(node, i, is_enable_cores)
+      processes.append(system_utils.modify_core(node["ip"], i, is_enable_cores))
+
+  for p in processes:
+    p.wait()
 
 
 def kill_cockroachdb_node(node):
@@ -132,52 +144,69 @@ def cleanup_previous_experiments(server_nodes, client_nodes, hot_node):
   # kill the hot node
   if hot_node:
     kill_hotnode(hot_node)
+    enable_cores([hot_node], 15)
 
   # re-enable ALL cores again, regardless of whether they were previously disabled
-  for node in [server_nodes + hot_node]:
-    enable_cores(node, 15)
+  enable_cores(server_nodes, 15)
 
 
 def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_duration, duration, read_percent,
-                    n_keys_per_statement, skew, log_dir):
+                    n_keys_per_statement, skew, log_dir, mode=RunMode.WARMUP_AND_TRIAL_RUN):
   server_urls = ["postgresql://root@{0}:26257?sslmode=disable".format(n["ip"])
                  for n in server_nodes]
-  args = [" --concurrency {}".format(concurrency), " --read_percent={}".format(read_percent),
-          " --batch={}".format(n_keys_per_statement), " --zipfian --s={}".format(skew),
-          " --keyspace={}".format(keyspace)]
+
+  # warmup and trial run commands are the same
+  args = ["--concurrency {}".format(concurrency), "--read-percent={}".format(read_percent),
+          "--batch={}".format(n_keys_per_statement), "--zipfian --s={}".format(skew),
+          "--keyspace={}".format(keyspace)]
   cmd = "{0} workload run kv {1} {2}".format(EXE, " ".join(server_urls), " ".join(args))
 
-  # run warmup
-  warmup_cmd = cmd + " --duration={}".format(warm_up_duration)
-  warmup_processes = []
-  for node in client_nodes:
-    cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
-    print(cmd)
-    warmup_processes.append(subprocess.Popen(shlex.split(cmd)))
+  if mode == RunMode.WARMUP_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
 
-  for wp in warmup_processes:
-    wp.wait()
+    # initialize the workload from driver node
+    init_cmd = "{0} workload init kv {1}".format(EXE, " ".join(server_urls))
+    driver_node = client_nodes[0]
+    system_utils.call_remote(driver_node["ip"], init_cmd)
 
-  # run trial
-  trial_cmd = cmd + " --duration={}".format(duration)
-  trial_processes = []
-  for node in client_nodes:
-    cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
-    print(cmd)
-    # logging output for each node
-    log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
-    with open(log_fpath, "w") as f:
-      trial_processes.append(subprocess.Popen(shlex.split(cmd), stdout=f))
+    # set database settings
+    a_server_node = server_nodes[0]
+    settings_cmd = 'echo "alter range default configure zone using num_replicas = 1;" | ' \
+                   '{0} sql --insecure --database=kv --url="postgresql://root@{1}?sslmode=disable"' \
+                    .format(EXE, a_server_node["ip"])
+    system_utils.call_remote(driver_node["ip"], settings_cmd)
 
-  for tp in trial_processes:
-    tp.wait()
+    # run warmup
+    warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
+    warmup_processes = []
+    for node in client_nodes:
+      individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
+      print(individual_node_cmd)
+      warmup_processes.append(subprocess.Popen(shlex.split(individual_node_cmd)))
+
+    for wp in warmup_processes:
+      wp.wait()
+
+  if mode == RunMode.TRIAL_RUN_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
+    # run trial
+    trial_cmd = cmd + " --duration={}s".format(duration)
+    trial_processes = []
+    for node in client_nodes:
+      individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
+      print(individual_node_cmd)
+      # logging output for each node
+      log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
+      with open(log_fpath, "w") as f:
+        trial_processes.append(subprocess.Popen(shlex.split(individual_node_cmd), stdout=f))
+
+    for tp in trial_processes:
+      tp.wait()
 
 
 def run(config, log_dir):
   server_nodes = config["warm_nodes"]
   client_nodes = config["workload_nodes"]
   commit_hash = config["cockroach_commit"]
-  hot_node = config["hot_node"]
+  hot_node = config["hot_node"] if "hot_node" in config else None
   # hotkeys = config["hotkeys"]
 
   # clear any remaining experiments
@@ -186,19 +215,20 @@ def run(config, log_dir):
   # disable cores, if need be
   cores_to_disable = config["disable_cores"]
   if cores_to_disable > 0:
-    disable_cores(server_nodes + hot_node, cores_to_disable)
+    disable_cores(server_nodes, cores_to_disable)
+    if hot_node:
+      disable_cores([hot_node], cores_to_disable)
 
   # start hot node
   if hot_node:
     setup_hotnode(hot_node)
 
   # build and start crdb cluster
-  build_cockroachdb_commit(server_nodes, commit_hash)
+  build_cockroachdb_commit(server_nodes + client_nodes, commit_hash)
   start_cluster(server_nodes)
   set_cluster_settings(server_nodes)
 
   # build and start client nodes
-  build_cockroachdb_commit(client_nodes, commit_hash)
   os.makedirs(log_dir)
 
   if config["name"] == "kv":
@@ -215,4 +245,26 @@ def run(config, log_dir):
   # re-enable cores
   cores_to_enable = cores_to_disable
   if cores_to_enable > 0:
-    enable_cores(server_nodes + hot_node, cores_to_enable)
+    enable_cores(server_nodes, cores_to_enable)
+    if hot_node:
+      enable_cores([hot_node], cores_to_enable)
+
+
+def main():
+  import argparse
+  parser = argparse.ArgumentParser()
+  parser.add_argument("ini_file")
+  args = parser.parse_args()
+
+  import config_io
+  config = config_io.read_config_from_file(args.ini_file)
+  config["concurrency"] = 16
+  import datetime
+  unique_suffix = datetime.datetime.now().strftime("%f")
+  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
+
+  run(config, log_dir)
+
+
+if __name__ == "__main__":
+  main()
