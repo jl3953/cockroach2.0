@@ -179,9 +179,9 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
     warmup_processes = []
     for node in client_nodes:
-      cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
-      print(cmd)
-      warmup_processes.append(subprocess.Popen(shlex.split(cmd)))
+      individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
+      print(individual_node_cmd)
+      warmup_processes.append(subprocess.Popen(shlex.split(individual_node_cmd)))
 
     for wp in warmup_processes:
       wp.wait()
@@ -191,12 +191,12 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     trial_cmd = cmd + " --duration={}s".format(duration)
     trial_processes = []
     for node in client_nodes:
-      cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
-      print(cmd)
+      individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
+      print(individual_node_cmd)
       # logging output for each node
       log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
       with open(log_fpath, "w") as f:
-        trial_processes.append(subprocess.Popen(shlex.split(cmd), stdout=f))
+        trial_processes.append(subprocess.Popen(shlex.split(individual_node_cmd), stdout=f))
 
     for tp in trial_processes:
       tp.wait()
