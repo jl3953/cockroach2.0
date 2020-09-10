@@ -1,4 +1,5 @@
 import configparser
+import json
 
 
 def write_config_to_file(config_dict, ini_fpath):
@@ -24,4 +25,8 @@ def read_config_from_file(ini_fpath):
   """
   config = configparser.ConfigParser()
   config.read(ini_fpath)
-  return config["DEFAULT"]
+
+  result = {}
+  for key in config["DEFAULT"]:
+    result[key] = json.loads(config["DEFAULT"][key])
+  return result
