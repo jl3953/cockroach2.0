@@ -261,7 +261,7 @@ def main():
   config = config_io.read_config_from_file(args.ini_file)
   config["concurrency"] = 16
   import datetime
-  unique_suffix = datetime.datetime.strftime("%f")
+  unique_suffix = datetime.datetime.now().strftime("%f")
   log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
 
   run(config, log_dir)
