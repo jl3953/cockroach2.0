@@ -132,9 +132,10 @@ def cleanup_previous_experiments(server_nodes, client_nodes, hot_node):
   # kill the hot node
   if hot_node:
     kill_hotnode(hot_node)
+    enable_cores(hot_node, 15)
 
   # re-enable ALL cores again, regardless of whether they were previously disabled
-  for node in [server_nodes + hot_node]:
+  for node in server_nodes:
     enable_cores(node, 15)
 
 
@@ -186,7 +187,9 @@ def run(config, log_dir):
   # disable cores, if need be
   cores_to_disable = config["disable_cores"]
   if cores_to_disable > 0:
-    disable_cores(server_nodes + hot_node, cores_to_disable)
+    disable_cores(server_nodes, cores_to_disable)
+    if hot_node:
+      disable_cores(hot_node, cores_to_disable)
 
   # start hot node
   if hot_node:
@@ -215,7 +218,9 @@ def run(config, log_dir):
   # re-enable cores
   cores_to_enable = cores_to_disable
   if cores_to_enable > 0:
-    enable_cores(server_nodes + hot_node, cores_to_enable)
+    enable_cores(server_nodes, cores_to_enable)
+    if hot_node:
+      enable_cores(hot_node, cores_to_enable)
 
 
 def main():
@@ -223,6 +228,7 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("ini_file")
   args = parser.parse_args()
+
 
   import config_io
   config = config_io.read_config_from_file(args.ini_file)
