@@ -132,11 +132,10 @@ def cleanup_previous_experiments(server_nodes, client_nodes, hot_node):
   # kill the hot node
   if hot_node:
     kill_hotnode(hot_node)
-    enable_cores(hot_node, 15)
+    enable_cores([hot_node], 15)
 
   # re-enable ALL cores again, regardless of whether they were previously disabled
-  for node in server_nodes:
-    enable_cores(node, 15)
+  enable_cores(server_nodes, 15)
 
 
 def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_duration, duration, read_percent,
@@ -189,7 +188,7 @@ def run(config, log_dir):
   if cores_to_disable > 0:
     disable_cores(server_nodes, cores_to_disable)
     if hot_node:
-      disable_cores(hot_node, cores_to_disable)
+      disable_cores([hot_node], cores_to_disable)
 
   # start hot node
   if hot_node:
@@ -220,7 +219,7 @@ def run(config, log_dir):
   if cores_to_enable > 0:
     enable_cores(server_nodes, cores_to_enable)
     if hot_node:
-      enable_cores(hot_node, cores_to_enable)
+      enable_cores([hot_node], cores_to_enable)
 
 
 def main():
