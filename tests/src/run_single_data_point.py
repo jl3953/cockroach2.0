@@ -172,8 +172,8 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     a_server_node = server_nodes[0]
     settings_cmd = 'echo "alter range default configure zone using num_replicas = 1;" | ' \
                    '{0} sql --insecure --database=kv --url="postgresql://root@{1}?sslmode=disable"' \
-      .format(EXE, driver_node["ip"])
-    system_utils.call_remote(a_server_node["ip"], settings_cmd)
+                    .format(EXE, a_server_node["ip"])
+    system_utils.call_remote(driver_node["ip"], settings_cmd)
 
     # run warmup
     warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
