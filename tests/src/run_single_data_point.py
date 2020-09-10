@@ -177,7 +177,7 @@ def run(config, log_dir):
   server_nodes = config["warm_nodes"]
   client_nodes = config["workload_nodes"]
   commit_hash = config["cockroach_commit"]
-  hot_node = config["hot_node"]
+  hot_node = config["hot_node"] if "hot_node" in config else None
   # hotkeys = config["hotkeys"]
 
   # clear any remaining experiments
@@ -216,3 +216,20 @@ def run(config, log_dir):
   cores_to_enable = cores_to_disable
   if cores_to_enable > 0:
     enable_cores(server_nodes + hot_node, cores_to_enable)
+
+
+def main():
+  import argparse
+  args = argparse.ArgumentParser()
+  args.add_argument("ini_file")
+
+  import config_io
+  config = config_io.read_config_from_file(args.ini_file)
+  config["concurrency"] = 16
+  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help")
+
+  run(config, log_dir)
+
+
+if __name__ == "__main__":
+  main()
