@@ -220,8 +220,9 @@ def run(config, log_dir):
 
 def main():
   import argparse
-  args = argparse.ArgumentParser()
-  args.add_argument("ini_file")
+  parser = argparse.ArgumentParser()
+  parser.add_argument("ini_file")
+  args = parser.parse_args()
 
   import config_io
   config = config_io.read_config_from_file(args.ini_file)
