@@ -38,5 +38,5 @@ def modify_core(node, core_num, is_enable=False):
   cmd = "echo {0} | tee /sys/devices/system/cpu/cpu{1}/online".format(1 if is_enable else 0, core_num)
   cmd = "sudo ssh {0} '{1}'".format(node, cmd)
   print(cmd)
-  subprocess.Popen(shlex.split(cmd))
+  return subprocess.Popen(shlex.split(cmd))
   # call_remote(node, cmd)
