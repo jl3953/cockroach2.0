@@ -10,7 +10,7 @@ def write_config_to_file(config_dict, ini_fpath):
   :return: (str) ini_file written to
   """
   config = configparser.ConfigParser()
-  config["DEFAULT"] = config_dict
+  config["DEFAULT"] = {key: json.dumps(value) for key, value in config_dict}
   with open(ini_fpath, "w") as ini:
     config.write(ini)
   return ini_fpath
