@@ -1,5 +1,4 @@
 class Node:
-
   """Represents information about a node."""
 
   def __init__(self, ip_enum, region=None, store=None):
@@ -25,7 +24,7 @@ class Node:
         and not hasattr(other, "store")):
         return True
       elif (hasattr(self, "region") and hasattr(other, "region") and self.region == other.region and
-        hasattr(self, "store") and hasattr(other, "store") and self.store == other.store):
+            hasattr(self, "store") and hasattr(other, "store") and self.store == other.store):
         return True
       else:
         return False

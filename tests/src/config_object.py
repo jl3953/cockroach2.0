@@ -66,10 +66,10 @@ class ConfigObject:
       num_warm_nodes = config_dict["num_warm_nodes"]
 
       workload_nodes = ConfigObject.enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes)
-      config_dict["workload_nodes"] = [str(n) for n in workload_nodes]
+      config_dict["workload_nodes"] = [vars(n) for n in workload_nodes]
 
       warm_nodes = ConfigObject.enumerate_warm_nodes(num_warm_nodes, driver_node_ip_enum, num_workload_nodes)
-      config_dict["warm_nodes"] = [str(n) for n in warm_nodes]
+      config_dict["warm_nodes"] = [vars(n) for n in warm_nodes]
 
     return combinations
 
