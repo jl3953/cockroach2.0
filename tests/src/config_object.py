@@ -21,7 +21,7 @@ class ConfigObject:
     self.trials = [1]
 
     # cluster
-    self.cockroach_commit = ["master"]
+    self.cockroach_commit = ["sqlite"]
     self.num_warm_nodes = [4]
     self.num_workload_nodes = [6]
     self.driver_node_ip_enum = [1]
