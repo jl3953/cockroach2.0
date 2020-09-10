@@ -2,7 +2,9 @@ import datetime
 import itertools
 import os
 
-from src import node, config_io, constants
+import config_io
+import constants
+import node
 
 TEST_PATH = os.path.join(constants.COCKROACHDB_DIR, "tests")
 TEST_CONFIG_PATH = os.path.join(TEST_PATH, "config")

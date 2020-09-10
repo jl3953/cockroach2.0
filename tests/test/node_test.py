@@ -1,6 +1,6 @@
 import unittest
 
-from src.node import Node
+from node import Node
 
 
 class NodeTest(unittest.TestCase):
