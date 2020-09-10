@@ -28,13 +28,13 @@ class ConfigObject:
 
     # self.workload_nodes = [] # to be populated
     # self.warm_nodes = [] # to be populated
-    self.hot_node = []
+    # self.hot_node = []
     self.hot_key_threshold = [-1]
     self.should_create_partition = [False]
     self.disable_cores = [2, 4, 6]
 
     # benchmark
-    self.name = "kv"
+    self.name = ["kv"]
     self.keyspace = [1000000]
     # self.concurrency = [] # to be populated
     self.warm_up_duration = [10]  # in seconds
@@ -52,7 +52,7 @@ class ConfigObject:
     """
     temp_dict = vars(self)
 
-    all_field_values = temp_dict.values()
+    all_field_values = list(temp_dict.values())
     values_combinations = list(itertools.product(*all_field_values))
 
     combinations = []
