@@ -93,9 +93,13 @@ def enable_cores(nodes, cores):
 
 
 def modify_cores(nodes, cores, is_enable_cores=False):
+  processes = []
   for node in nodes:
     for i in range(1, cores + 1):
-      system_utils.modify_core(node["ip"], i, is_enable_cores)
+      processes.append(system_utils.modify_core(node["ip"], i, is_enable_cores))
+
+  for p in processes:
+    p.wait()
 
 
 def kill_cockroachdb_node(node):
@@ -148,7 +152,7 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
   cmd = "{0} workload run kv {1} {2}".format(EXE, " ".join(server_urls), " ".join(args))
 
   # run warmup
-  warmup_cmd = cmd + " --duration={}".format(warm_up_duration)
+  warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
   warmup_processes = []
   for node in client_nodes:
     cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
@@ -159,7 +163,7 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     wp.wait()
 
   # run trial
-  trial_cmd = cmd + " --duration={}".format(duration)
+  trial_cmd = cmd + " --duration={}s".format(duration)
   trial_processes = []
   for node in client_nodes:
     cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
