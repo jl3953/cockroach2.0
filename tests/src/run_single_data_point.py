@@ -2,10 +2,18 @@ import os
 import shlex
 import subprocess
 
+import enum
+
 import constants
 import system_utils
 
 EXE = os.path.join(constants.COCKROACHDB_DIR, "cockroach")
+
+
+class RunMode(enum.Enum):
+  WARMUP_ONLY = 1
+  TRIAL_RUN_ONLY = 2
+  WARMUP_AND_TRIAL_RUN = 3
 
 
 def set_cluster_settings_on_single_node(node):
@@ -143,38 +151,55 @@ def cleanup_previous_experiments(server_nodes, client_nodes, hot_node):
 
 
 def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_duration, duration, read_percent,
-                    n_keys_per_statement, skew, log_dir):
+                    n_keys_per_statement, skew, log_dir, mode=RunMode.WARMUP_AND_TRIAL_RUN):
   server_urls = ["postgresql://root@{0}:26257?sslmode=disable".format(n["ip"])
                  for n in server_nodes]
+
+  # warmup and trial run commands are the same
   args = [" --concurrency {}".format(concurrency), " --read-percent={}".format(read_percent),
           " --batch={}".format(n_keys_per_statement), " --zipfian --s={}".format(skew),
           " --keyspace={}".format(keyspace)]
   cmd = "{0} workload run kv {1} {2}".format(EXE, " ".join(server_urls), " ".join(args))
 
-  # run warmup
-  warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
-  warmup_processes = []
-  for node in client_nodes:
-    cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
-    print(cmd)
-    warmup_processes.append(subprocess.Popen(shlex.split(cmd)))
+  if mode == RunMode.WARMUP_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
 
-  for wp in warmup_processes:
-    wp.wait()
+    # initialize the workload from driver node
+    init_cmd = "{0} workload init kv {1}".format(EXE, " ".join(server_urls))
+    driver_node = client_nodes[0]
+    system_utils.call_remote(driver_node["ip"], init_cmd)
 
-  # run trial
-  trial_cmd = cmd + " --duration={}s".format(duration)
-  trial_processes = []
-  for node in client_nodes:
-    cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
-    print(cmd)
-    # logging output for each node
-    log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
-    with open(log_fpath, "w") as f:
-      trial_processes.append(subprocess.Popen(shlex.split(cmd), stdout=f))
+    # set database settings
+    a_server_node = server_nodes[0]
+    settings_cmd = 'echo "alter range default configure zone using num_replicas = 1;" | ' \
+                   '{0} sql --insecure --database=kv --url="postgresql://root@{1}?sslmode=disable"' \
+      .format(EXE, driver_node["ip"])
+    system_utils.call_remote(a_server_node["ip"], settings_cmd)
 
-  for tp in trial_processes:
-    tp.wait()
+    # run warmup
+    warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
+    warmup_processes = []
+    for node in client_nodes:
+      cmd = "sudo ssh {0} '{1}'".format(node["ip"], warmup_cmd)
+      print(cmd)
+      warmup_processes.append(subprocess.Popen(shlex.split(cmd)))
+
+    for wp in warmup_processes:
+      wp.wait()
+
+  if mode == RunMode.TRIAL_RUN_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
+    # run trial
+    trial_cmd = cmd + " --duration={}s".format(duration)
+    trial_processes = []
+    for node in client_nodes:
+      cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
+      print(cmd)
+      # logging output for each node
+      log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
+      with open(log_fpath, "w") as f:
+        trial_processes.append(subprocess.Popen(shlex.split(cmd), stdout=f))
+
+    for tp in trial_processes:
+      tp.wait()
 
 
 def run(config, log_dir):
@@ -232,11 +257,12 @@ def main():
   parser.add_argument("ini_file")
   args = parser.parse_args()
 
-
   import config_io
   config = config_io.read_config_from_file(args.ini_file)
   config["concurrency"] = 16
-  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help")
+  import datetime
+  unique_suffix = datetime.datetime.strftime("%f")
+  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
 
   run(config, log_dir)
 
