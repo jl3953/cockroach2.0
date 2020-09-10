@@ -2,7 +2,8 @@ import os
 import shlex
 import subprocess
 
-from src import constants, system_utils
+import constants
+import system_utils
 
 EXE = os.path.join(constants.COCKROACHDB_DIR, "cockroach")
 

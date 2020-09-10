@@ -1,6 +1,7 @@
 import unittest
 
-from src import config_object, node
+import config_object
+import node
 
 
 class ConfigObjectTest(unittest.TestCase):

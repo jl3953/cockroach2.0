@@ -3,7 +3,7 @@ import os
 import subprocess
 import unittest
 
-from src import system_utils
+import system_utils
 
 
 class SystemUtilsTest(unittest.TestCase):
