@@ -224,12 +224,11 @@ def run(config, log_dir):
     setup_hotnode(hot_node)
 
   # build and start crdb cluster
-  build_cockroachdb_commit(server_nodes, commit_hash)
+  build_cockroachdb_commit(server_nodes + client_nodes, commit_hash)
   start_cluster(server_nodes)
   set_cluster_settings(server_nodes)
 
   # build and start client nodes
-  build_cockroachdb_commit(client_nodes, commit_hash)
   os.makedirs(log_dir)
 
   if config["name"] == "kv":
