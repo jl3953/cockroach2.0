@@ -643,7 +643,8 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 	return sendAndFill(ctx, txn.Send, b)
 }
 
-func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, hlc.Timestamp) {
+func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte,
+	provisionalCommitTimestamp hlc.Timestamp) ([][]byte, bool) {
 
 	/*address := "node-4:50051"
 	defaultName := "world"
@@ -673,11 +674,6 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 			"exceeded acceptable retries:[%+d], err:[%+v]", i, err)
 	}*/
 
-	// JENNDEBUG TODO filling in fake deadline
-	deadline := new(hlc.Timestamp)
-	clock := hlc.NewClock(hlc.UnixNano, 1)
-	*deadline = clock.Now()
-
 	readResults := make([][]byte, 0)
 
 	// JENNDEBUG TODO filling in fake results
@@ -688,18 +684,17 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([]
 		readResults = append(readResults, readHotkey, result)
 	}
 
-	return readResults, *deadline
+	return readResults, true
 }
 
 func (txn *Txn) commit(ctx context.Context) error {
 	var ba roachpb.BatchRequest
 
-	// by the time we get here, and the rpc hasn't fired off yet for the write hotkeys,
-	// we know this is a write-only txn with write hotkeys but no read hotkeys. Otherwise, this
-	// rpc would have fired off in the execution of the SELECT statement.
-	if txn.HasWriteHotkeys() {
-		_, deadline := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), nil)
-		txn.SetFixedTimestamp(ctx, deadline)
+	if txn.HasWriteHotkeys() || txn.HasReadHotkeys() {
+		if _, succeeded := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), txn.GetAndClearReadHotkeys(), txn.ProvisionalCommitTimestamp()); !succeeded {
+			// jenndebug TODO how do I abort a txn?
+			log.Fatal(ctx, "jenndebug the hotshard could not commit txn")
+		}
 	}
 
 	ba.Add(endTxnReq(true /* commit */, txn.deadline(), txn.systemConfigTrigger))

@@ -86,7 +86,7 @@ def run(config, lt_config, log_dir):
 def find_optimal_concurrency(lt_fpath_csv):
   data = csv_utils.read_in_data(lt_fpath_csv)
   max_throughput_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
-  return last_adjustments(max_throughput_concurrency)
+  return int(last_adjustments(max_throughput_concurrency))
 
 
 def main():
