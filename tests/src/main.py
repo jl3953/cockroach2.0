@@ -69,6 +69,8 @@ def main():
       except BaseException as e:
         print("Config {0} failed to run, continue with other configs. e:[{1}]"
               .format(cfg["config_fpath"], e))
+        # TODO take this out later
+        raise e
 
 
 if __name__ == "__main__":
