@@ -3,9 +3,13 @@ import operator
 import os
 
 import config_io
+import constants
 import csv_utils
 import gather
+import plot_utils
 import run_single_data_point
+
+LT_GNUPLOT_EXE = os.path.join(constants.TEST_SRC_PATH, "lt.gp")
 
 
 def last_adjustments(max_throughput_concurrency):
@@ -25,23 +29,24 @@ def insert_csv_data(data, csv_fpath):
   return csv_fpath
 
 
-def latency_throughput(config, lt_config, log_dir):
-  # read lt config file
-  start, end = lt_config["concurrency"]
-  step_size = lt_config["step_size"]
-
+def run(config, lt_config, log_dir):
   # create latency throughput dir, if not running recovery
   lt_dir = os.path.join(log_dir, "latency_throughput")
   lt_logs_dir = os.path.join(lt_dir, "logs")
+  checkpoint_csv_fpath = os.path.join(lt_dir, "lt.csv")
   if not os.path.exists(lt_logs_dir):
     # not running recovery
     os.makedirs(lt_logs_dir)
+
+  # read lt config file
+  start, end = lt_config["concurrency"]
+  step_size = lt_config["step_size"]
 
   # honing in on increasingly smaller ranges
   max_throughput_concurrency = -1  # placeholder
   data = []
   while step_size > 0:
-    for concurrency in range(start, end, step_size):
+    for concurrency in range(start, end + step_size, step_size):
       # run trial for this concurrency
       config["concurrency"] = concurrency
 
@@ -51,13 +56,12 @@ def latency_throughput(config, lt_config, log_dir):
 
       # run trial
       os.makedirs(specific_logs_dir)
-      bench_logs = run_single_data_point.run(config, specific_logs_dir)
+      results_fpath_csv = run_single_data_point.run(config, specific_logs_dir)
 
       # gather data from this run
       datum = {"concurrency": concurrency}
-      more_data, has_data = gather.gather_data_from_raw_kv_logs(bench_logs)
-      if has_data:
-        datum.update(more_data)
+      more_data = csv_utils.read_in_data(results_fpath_csv)
+      datum.update(*more_data)
       data.append(datum)
 
     # find max throughput and hone in on it
@@ -67,12 +71,24 @@ def latency_throughput(config, lt_config, log_dir):
     end = concurrency + step_size
     step_size = int(step_size / 2)
 
-    # checkpoint, and also write out csv values every round of honing in
-    checkpoint = os.path.join(lt_dir, "checkpoint.csv")
-    insert_csv_data(data, checkpoint)
+    # checkpoint_csv_fpath, and also write out csv values every round of honing in
+    insert_csv_data(data, checkpoint_csv_fpath)
 
-  max_throughput_concurrency = last_adjustments(max_throughput_concurrency)
-  return max_throughput_concurrency, data
+  # TODO sqlite
+
+  # plot the latency throughput graphs
+  plot_utils.gnuplot(LT_GNUPLOT_EXE, checkpoint_csv_fpath,
+                     os.path.join(lt_dir, "p50_lt.png"),
+                     os.path.join(lt_dir, "p95_lt.png"),
+                     os.path.join(lt_dir, "p99_lt.png"))
+
+  return checkpoint_csv_fpath
+
+
+def find_optimal_concurrency(lt_fpath_csv):
+  data = csv_utils.read_in_data(lt_fpath_csv)
+  max_throughput_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+  return last_adjustments(max_throughput_concurrency)
 
 
 def main():
@@ -80,15 +96,18 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("ini_file")
   parser.add_argument("lt_ini_file")
+  import constants
+  parser.add_argument("--log_dir", type=str, default=constants.SCRATCH_DIR)
   args = parser.parse_args()
 
   config = config_io.read_config_from_file(args.ini_file)
   lt_config = config_io.read_config_from_file(args.lt_ini_file)
 
   unique_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-  import constants
-  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
-  latency_throughput(config, lt_config, log_dir)
+  log_dir = os.path.join(args.log_dir, "lt_{}".format(unique_suffix))
+  if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+  run(config, lt_config, log_dir)
 
 
 if __name__ == "__main__":
