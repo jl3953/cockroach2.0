@@ -1,4 +1,6 @@
+import datetime
 import os
+import sqlite3
 
 import config_io
 import config_object
@@ -8,9 +10,18 @@ import latency_throughput
 import run_single_data_point
 import system_utils
 
-config_object_list = [
+######## configuring the main file ###########
+
+# configuration objec generators matched to the latency throughput files
+CONFIG_OBJ_LIST = [
   (config_object.ConfigObject(), os.path.join(constants.TEST_CONFIG_PATH, "override.ini")),
 ]
+
+# location of the entire database run
+unique_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+DB_DIR = os.path.join(constants.SCRATCH_DIR, "db_{0}".format(unique_suffix))
+
+######## end of configs #############
 
 
 def generate_dir_name(config_fpath):
@@ -21,9 +32,13 @@ def generate_dir_name(config_fpath):
 
 
 def main():
-  # TODO create the database
 
-  for cfg_obj, lt_fpath in config_object_list:
+  # create the database and table
+  # conn = sqlite3.connect(os.path.join(DB_DIR, "trials.db"))
+  # c = conn.cursor()
+  # c.execute("CREATE TABLE")
+
+  for cfg_obj, lt_fpath in CONFIG_OBJ_LIST:
 
     # generate config objects
     cfg_fpath_list = cfg_obj.generate_all_config_files()
