@@ -91,12 +91,11 @@ def main():
       try:
         # make directory in which trial will be run
         logs_dir = generate_dir_name(cfg["config_fpath"])
-        if os.path.exists(logs_dir):
+        if not os.path.exists(logs_dir):
           os.makedirs(logs_dir)
 
         # copy over config into directory
-        system_utils.call("cp {0} {1}".format(cfg["config_fpath"],
-                                              os.path.join(logs_dir, os.path.basename(cfg["config_fpath"]))))
+        system_utils.call("cp {0} {1}".format(cfg["config_fpath"], logs_dir))
 
         # generate latency throughput trials
         lt_fpath_csv = latency_throughput.run(cfg, lt_cfg, logs_dir)
