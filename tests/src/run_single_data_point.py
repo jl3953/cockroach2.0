@@ -194,19 +194,25 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
       wp.wait()
 
   if mode == RunMode.TRIAL_RUN_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
+
+    # making the logs directory, if it doesn't already exist
     log_fpath = os.path.join(log_dir, "logs")
     if not os.path.exists(log_fpath):
       os.makedirs(log_fpath)
-    bench_log_files = []
+
     # run trial
     trial_cmd = cmd + " --duration={}s".format(duration)
     trial_processes = []
+    bench_log_files = []
     for node in client_nodes:
-      individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
-      print(individual_node_cmd)
+
       # logging output for each node
       individual_log_fpath = os.path.join(log_fpath, "bench_{}.txt".format(node["ip"]))
       bench_log_files.append(individual_log_fpath)
+
+      # run command
+      individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
+      print(individual_node_cmd)
       with open(individual_log_fpath, "w") as f:
         trial_processes.append(subprocess.Popen(shlex.split(individual_node_cmd), stdout=f))
 
@@ -267,7 +273,7 @@ def run(config, log_dir):
   if not has_data:
     raise RuntimeError("Config {0} has failed to produce any results".format(config["cfg_fpath"]))
   results_fpath = os.path.join(log_dir, "results.csv")
-  _ = csv_utils.write_out_data(data, results_fpath)
+  _ = csv_utils.write_out_data([data], results_fpath)
 
   return results_fpath
 
