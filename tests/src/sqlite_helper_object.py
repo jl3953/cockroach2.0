@@ -19,7 +19,7 @@ class SQLiteHelperObject:
     self.c.execute("CREATE TABLE IF NOT EXISTS {0} ({1})"
                    .format(table_name, ", ".join(row_names_list)))
 
-  def insert_csv_data_into_sqlite_table(self, table_name, csv_fpath, **kwargs):
+  def insert_csv_data_into_sqlite_table(self, table_name, csv_fpath, *args, **kwargs):
 
     # read in csv file data
     header, data = csv_utils.read_in_data_as_tuples(csv_fpath)
