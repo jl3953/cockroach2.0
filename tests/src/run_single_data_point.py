@@ -205,9 +205,9 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
       individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
       print(individual_node_cmd)
       # logging output for each node
-      log_fpath = os.path.join(log_fpath, "bench_{}.txt".format(node["ip"]))
-      bench_log_files.append(log_fpath)
-      with open(log_fpath, "w") as f:
+      individual_log_fpath = os.path.join(log_fpath, "bench_{}.txt".format(node["ip"]))
+      bench_log_files.append(individual_log_fpath)
+      with open(individual_log_fpath, "w") as f:
         trial_processes.append(subprocess.Popen(shlex.split(individual_node_cmd), stdout=f))
 
     for tp in trial_processes:
@@ -284,7 +284,7 @@ def main():
   config = config_io.read_config_from_file(args.ini_file)
   config["concurrency"] = args.concurrency
   import datetime
-  unique_suffix = datetime.datetime.now().strftime("%f")
+  unique_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
   log_dir = os.path.join(args.log_dir, "run_single_trial_{0}".format(unique_suffix))
   if not os.path.exists(log_dir):
     os.makedirs(log_dir)
