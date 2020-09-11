@@ -8,6 +8,7 @@ import constants
 import generate_configs
 import latency_throughput
 import run_single_data_point
+import sqlite_helper_object
 import system_utils
 
 ######## configuring the main file ###########
@@ -31,13 +32,49 @@ def generate_dir_name(config_fpath):
 
   return dir_name
 
+# def table_rows():
+#   fields = ["elapsed-r",
+#             "errors-r",
+#             "ops(total)-r",
+#             "ops/sec(cum)-r",
+#             "avg(ms)-r",
+#             "p50(ms)-r",
+#             "p95(ms)-r",
+#             "p99(ms)-r",
+#             "pMax(ms)-r",
+#             "total-r",
+#             "elapsed-w",
+#             "errors-w",
+#             "ops(total)-w",
+#             "ops/sec(cum)-w",
+#             "avg(ms)-w",
+#             "p50(ms)-w",
+#             "p95(ms)-w",
+#             "p99(ms)-w",
+#             "pMax(ms)-w",
+#             "total-w",
+#             "elapsed",
+#             "errors",
+#             "ops(total)",
+#             "ops/sec(cum)",
+#             "avg(ms)",
+#             "p50(ms)",
+#             "p95(ms)",
+#             "p99(ms)",
+#             "pMax(ms)",
+#   ]
+#
+#   return "({0})".format(", ".join(fields))
+#
+#
+#
+
 
 def main():
 
   # create the database and table
-  # conn = sqlite3.connect(os.path.join(DB_DIR, "trials.db"))
-  # c = conn.cursor()
-  # c.execute("CREATE TABLE")
+  db = sqlite_helper_object.SQLiteHelperObject(os.path.join(DB_DIR, "trials.db"))
+  db.connect()
 
   for cfg_obj, lt_fpath in CONFIG_OBJ_LIST:
 
@@ -65,12 +102,16 @@ def main():
         results_fpath_csv = run_single_data_point.run(cfg, logs_dir)
 
         # TODO insert into sqlite database
+        db.insert_csv_data_into_sqlite_table("trials_table", results_fpath_csv,
+                                             {"logs_dir": logs_dir})
 
       except BaseException as e:
         print("Config {0} failed to run, continue with other configs. e:[{1}]"
               .format(cfg["config_fpath"], e))
         # TODO take this out later
         raise e
+
+  db.close()
 
 
 if __name__ == "__main__":
