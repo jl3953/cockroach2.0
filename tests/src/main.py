@@ -42,7 +42,7 @@ def main():
 
     # generate config objects
     cfg_fpath_list = cfg_obj.generate_all_config_files()
-    cfgs = generate_configs.generate_config_files_and_add_fields(cfg_fpath_list)
+    cfgs = generate_configs.generate_configs_from_files_and_add_fields(cfg_fpath_list)
 
     # generate lt_config objects that match those config objects
     lt_cfg = config_io.read_config_from_file(lt_fpath)
