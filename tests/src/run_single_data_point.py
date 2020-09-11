@@ -229,8 +229,6 @@ def run(config, log_dir):
   set_cluster_settings(server_nodes)
 
   # build and start client nodes
-  os.makedirs(log_dir)
-
   if config["name"] == "kv":
     keyspace = config["keyspace"]
     warm_up_duration = config["warm_up_duration"]
@@ -262,6 +260,7 @@ def main():
   import datetime
   unique_suffix = datetime.datetime.now().strftime("%f")
   log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
+  os.makedirs(log_dir)
 
   run(config, log_dir)
 
