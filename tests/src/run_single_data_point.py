@@ -249,7 +249,7 @@ def run(config, log_dir):
   set_cluster_settings(server_nodes)
 
   # build and start client nodes
-  bench_log_files = []
+  results_fpath = ""
   if config["name"] == "kv":
     keyspace = config["keyspace"]
     warm_up_duration = config["warm_up_duration"]
@@ -261,19 +261,22 @@ def run(config, log_dir):
     bench_log_files = run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_duration, duration,
                                       read_percent, n_keys_per_statement, skew, log_dir)
 
+    # create csv file of gathered data
+    data, has_data = gather.gather_data_from_raw_kv_logs(bench_log_files)
+    if not has_data:
+      raise RuntimeError("Config {0} has failed to produce any results".format(config["cfg_fpath"]))
+
+    # write out csv file
+    data["concurrency"] = config["concurrency"]
+    results_fpath = os.path.join(log_dir, "results.csv")
+    _ = csv_utils.write_out_data([data], results_fpath)
+
   # re-enable cores
   cores_to_enable = cores_to_disable
   if cores_to_enable > 0:
     enable_cores(server_nodes, cores_to_enable)
     if hot_node:
       enable_cores([hot_node], cores_to_enable)
-
-  # create csv file of gathered data
-  data, has_data = gather.gather_data_from_raw_kv_logs(bench_log_files)
-  if not has_data:
-    raise RuntimeError("Config {0} has failed to produce any results".format(config["cfg_fpath"]))
-  results_fpath = os.path.join(log_dir, "results.csv")
-  _ = csv_utils.write_out_data([data], results_fpath)
 
   return results_fpath
 
