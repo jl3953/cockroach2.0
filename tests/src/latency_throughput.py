@@ -50,11 +50,14 @@ def latency_throughput(config, lt_config, log_dir):
         str(concurrency), datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")))
 
       # run trial
+      os.makedirs(specific_logs_dir)
       bench_logs = run_single_data_point.run(config, specific_logs_dir)
 
       # gather data from this run
       datum = {"concurrency": concurrency}
-      datum.update(gather.gather_data_from_raw_kv_logs(bench_logs))
+      more_data, has_data = gather.gather_data_from_raw_kv_logs(bench_logs)
+      if has_data:
+        datum.update(more_data)
       data.append(datum)
 
     # find max throughput and hone in on it
