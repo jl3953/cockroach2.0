@@ -45,6 +45,7 @@ def run(config, lt_config, log_dir):
   # honing in on increasingly smaller ranges
   data = []
   while step_size > 0:
+    print("start", type(start), "end", type(end), "step_size", type(step_size))
     for concurrency in range(start, end + step_size, step_size):
       # run trial for this concurrency
       config["concurrency"] = concurrency
@@ -66,8 +67,8 @@ def run(config, lt_config, log_dir):
     # find max throughput and hone in on it
     max_throughput_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
     concurrency = last_adjustments(max_throughput_concurrency)
-    start = concurrency - step_size
-    end = concurrency + step_size
+    start = int(concurrency - step_size)
+    end = int(concurrency + step_size)
     step_size = int(step_size / 2)
 
     # checkpoint_csv_fpath, and also write out csv values every round of honing in

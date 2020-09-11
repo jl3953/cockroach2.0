@@ -262,12 +262,13 @@ def run(config, log_dir):
                                       read_percent, n_keys_per_statement, skew, log_dir)
 
     # create csv file of gathered data
-    data, has_data = gather.gather_data_from_raw_kv_logs(bench_log_files)
+    data = {"concurrency": config["concurrency"]}
+    more_data, has_data = gather.gather_data_from_raw_kv_logs(bench_log_files)
     if not has_data:
       raise RuntimeError("Config {0} has failed to produce any results".format(config["cfg_fpath"]))
+    data.update(more_data)
 
     # write out csv file
-    data["concurrency"] = config["concurrency"]
     results_fpath = os.path.join(log_dir, "results.csv")
     _ = csv_utils.write_out_data([data], results_fpath)
 
