@@ -5,6 +5,7 @@ import sqlite3
 import config_io
 import config_object
 import constants
+import csv_utils
 import generate_configs
 import latency_throughput
 import run_single_data_point
@@ -78,6 +79,9 @@ def main():
   db = sqlite_helper_object.SQLiteHelperObject(os.path.join(DB_DIR, "trials.db"))
   db.connect()
 
+  # file of failed configs
+  failed_configs_csv = os.path.join(DB_DIR, "failed_configs.csv")
+
   for cfg_obj, lt_fpath in CONFIG_OBJ_LIST:
 
     # generate config objects
@@ -119,8 +123,9 @@ def main():
       except BaseException as e:
         print("Config {0} failed to run, continue with other configs. e:[{1}]"
               .format(cfg["config_fpath"], e))
-        # TODO take this out later
-        raise e
+        csv_utils.write_out_data({"config_fpath": cfg["config_fpath"],
+                                  "lt_fpath": lt_fpath},
+                                 failed_configs_csv)
 
   db.close()
 
