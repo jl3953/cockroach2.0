@@ -11,6 +11,7 @@ class SQLiteHelperObject:
     self.c = None
 
   def connect(self):
+    print(self.db)
     self.conn = sqlite3.connect(self.db)
     self.c = self.conn.cursor()
 
