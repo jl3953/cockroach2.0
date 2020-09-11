@@ -11,9 +11,9 @@ def extract_data(last_eight_lines):
     suffix = ""
     fields = data_line.strip().split()
     if "read" in fields[-1]:
-      suffix = "-r"
+      suffix = "_r"
     elif "write" in fields[-1]:
-      suffix = "-w"
+      suffix = "_w"
 
     header = [w + suffix for w in re.split('_+', header_line.strip().strip('_'))]
     data = dict(zip(header, fields))
