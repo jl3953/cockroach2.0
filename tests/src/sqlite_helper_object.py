@@ -1,3 +1,4 @@
+import argparse
 import sqlite3
 
 import csv_utils
@@ -11,7 +12,6 @@ class SQLiteHelperObject:
     self.c = None
 
   def connect(self):
-    print(self.db)
     self.conn = sqlite3.connect(self.db)
     self.c = self.conn.cursor()
 
@@ -36,3 +36,24 @@ class SQLiteHelperObject:
 
   def close(self):
     self.conn.close()
+
+
+def main():
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument("db_file")
+  parser.add_argument("csv")
+  parser.add_argument("logs_dir")
+  parser.add_argument("table_name")
+
+  args = parser.parse_args()
+
+  db = SQLiteHelperObject(args.db_file)
+  db.connect()
+
+  db.insert_csv_data_into_sqlite_table(args.table_name, args.csv,
+                                       {"logs_dir": args.logs_dir})
+
+
+if __name__ == "__main__":
+  main()
