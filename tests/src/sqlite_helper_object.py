@@ -66,8 +66,7 @@ def main():
   db = SQLiteHelperObject(args.db_file)
   db.connect()
 
-  db.insert_csv_data_into_sqlite_table(args.table_name, args.csv,
-                                       {"logs_dir": args.logs_dir})
+  db.insert_csv_data_into_sqlite_table(args.table_name, args.csv)
 
 
 if __name__ == "__main__":
