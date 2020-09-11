@@ -95,7 +95,8 @@ def main():
           os.makedirs(logs_dir)
 
         # copy over config into directory
-        system_utils.call("cp {0} {1}".format(cfg["config_fpath"], logs_dir, ""))
+        system_utils.call("cp {0} {1}".format(cfg["config_fpath"],
+                                              os.path.join(logs_dir, os.path.basename(cfg["config_fpath"]))))
 
         # generate latency throughput trials
         lt_fpath_csv = latency_throughput.run(cfg, lt_cfg, logs_dir)
@@ -104,7 +105,7 @@ def main():
         cfg["concurrency"] = latency_throughput.find_optimal_concurrency(lt_fpath_csv)
         results_fpath_csv = run_single_data_point.run(cfg, logs_dir)
 
-        # TODO insert into sqlite database
+        # insert into sqlite db
         db.insert_csv_data_into_sqlite_table("trials_table", results_fpath_csv,
                                              {"logs_dir": logs_dir})
 
