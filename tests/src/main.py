@@ -73,6 +73,8 @@ def generate_dir_name(config_fpath):
 def main():
 
   # create the database and table
+  if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR)
   db = sqlite_helper_object.SQLiteHelperObject(os.path.join(DB_DIR, "trials.db"))
   db.connect()
 
@@ -89,7 +91,8 @@ def main():
       try:
         # make directory in which trial will be run
         logs_dir = generate_dir_name(cfg["config_fpath"])
-        os.makedirs(logs_dir)
+        if os.path.exists(logs_dir):
+          os.makedirs(logs_dir)
 
         # copy over config into directory
         system_utils.call("cp {0} {1}".format(cfg["config_fpath"], logs_dir))
