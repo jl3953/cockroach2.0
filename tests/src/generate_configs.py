@@ -11,7 +11,7 @@ def generate_config_files_and_add_fields(config_objects):
   return config_file_list
 
 
-def generate_configs_from_files(config_file_list):
+def generate_configs_from_files_and_add_fields(config_file_list):
   configs = []
   for file in config_file_list:
     cfg = config_io.read_config_from_file(file)

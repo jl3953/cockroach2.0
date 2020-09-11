@@ -27,8 +27,9 @@ DB_DIR = os.path.join(constants.SCRATCH_DIR, "db_{0}".format(unique_suffix))
 def generate_dir_name(config_fpath):
   config_file = os.path.basename(config_fpath)
   config_name = config_file.split('.')[0]
+  dir_name = os.path.join(DB_DIR, config_name)
 
-  return config_name
+  return dir_name
 
 
 def main():
@@ -42,7 +43,7 @@ def main():
 
     # generate config objects
     cfg_fpath_list = cfg_obj.generate_all_config_files()
-    cfgs = generate_configs.generate_config_files_and_add_fields(cfg_fpath_list)
+    cfgs = generate_configs.generate_configs_from_files_and_add_fields(cfg_fpath_list)
 
     # generate lt_config objects that match those config objects
     lt_cfg = config_io.read_config_from_file(lt_fpath)
@@ -68,6 +69,8 @@ def main():
       except BaseException as e:
         print("Config {0} failed to run, continue with other configs. e:[{1}]"
               .format(cfg["config_fpath"], e))
+        # TODO take this out later
+        raise e
 
 
 if __name__ == "__main__":
