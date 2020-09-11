@@ -73,10 +73,10 @@ def start_cluster(nodes):
 
   processes = []
   for node in nodes[1:]:
-    start_cockroach_node(node, join=first["ip"]).wait()
-    set_cluster_settings_on_single_node(first)
+    # start_cockroach_node(node, join=first["ip"]).wait()
+    # set_cluster_settings_on_single_node(first)
 
-    # processes.append(start_cockroach_node(node, join=first["ip"]))
+    processes.append(start_cockroach_node(node, join=first["ip"]))
 
   for process in processes:
     process.wait()
@@ -162,7 +162,7 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
   args = ["--concurrency {}".format(concurrency), "--read-percent={}".format(read_percent),
           "--batch={}".format(n_keys_per_statement), "--zipfian --s={}".format(skew),
           "--keyspace={}".format(keyspace)]
-  cmd = "{0} workload run kv {1} {2}".format(EXE, " ".join(server_urls), " ".join(args))
+  cmd = "{0} workload run kv {1} {2} --useOriginal=False".format(EXE, " ".join(server_urls), " ".join(args))
 
   if mode == RunMode.WARMUP_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
 
@@ -172,11 +172,11 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     system_utils.call_remote(driver_node["ip"], init_cmd)
 
     # set database settings
-    # a_server_node = server_nodes[0]
-    # settings_cmd = 'echo "alter range default configure zone using num_replicas = 1;" | ' \
-    #                '{0} sql --insecure --database=kv --url="postgresql://root@{1}?sslmode=disable"' \
-    #   .format(EXE, a_server_node["ip"])
-    # system_utils.call_remote(driver_node["ip"], settings_cmd)
+    a_server_node = server_nodes[0]
+    settings_cmd = 'echo "alter range default configure zone using num_replicas = 1;" | ' \
+                   '{0} sql --insecure --database=kv --url="postgresql://root@{1}?sslmode=disable"' \
+      .format(EXE, a_server_node["ip"])
+    system_utils.call_remote(driver_node["ip"], settings_cmd)
 
     # run warmup
     warmup_cmd = cmd + " --duration={}s".format(warm_up_duration)
