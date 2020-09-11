@@ -29,7 +29,7 @@ class SQLiteHelperObject:
     data_rows = [tuple(data_row + list(kwargs.values())) for data_row in data]
     print(column_names, len(column_names))
     print(data_rows[0], len(data_rows[0]))
-    question_marks = ", ".join(["?"] * len(column_names))
+    question_marks = ",".join(["?"] * len(column_names))
     self.create_table_if_not_exists(table_name, column_names)
 
     # insert the rows
