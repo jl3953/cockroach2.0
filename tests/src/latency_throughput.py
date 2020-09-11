@@ -9,7 +9,6 @@ import gather
 import plot_utils
 import run_single_data_point
 
-
 LT_GNUPLOT_EXE = os.path.join(constants.TEST_SRC_PATH, "lt.gp")
 
 
@@ -30,8 +29,7 @@ def insert_csv_data(data, csv_fpath):
   return csv_fpath
 
 
-def latency_throughput(config, lt_config, log_dir):
-
+def run(config, lt_config, log_dir):
   # create latency throughput dir, if not running recovery
   lt_dir = os.path.join(log_dir, "latency_throughput")
   lt_logs_dir = os.path.join(lt_dir, "logs")
@@ -58,13 +56,12 @@ def latency_throughput(config, lt_config, log_dir):
 
       # run trial
       os.makedirs(specific_logs_dir)
-      bench_logs = run_single_data_point.run(config, specific_logs_dir)
+      results_fpath_csv = run_single_data_point.run(config, specific_logs_dir)
 
       # gather data from this run
       datum = {"concurrency": concurrency}
-      more_data, has_data = gather.gather_data_from_raw_kv_logs(bench_logs)
-      if has_data:
-        datum.update(more_data)
+      more_data = csv_utils.read_in_data(results_fpath_csv)
+      datum.update(more_data)
       data.append(datum)
 
     # find max throughput and hone in on it
@@ -85,8 +82,13 @@ def latency_throughput(config, lt_config, log_dir):
                      os.path.join(lt_dir, "p95_lt.png"),
                      os.path.join(lt_dir, "p99_lt.png"))
 
-  max_throughput_concurrency = last_adjustments(max_throughput_concurrency)
-  return max_throughput_concurrency, data
+  return checkpoint_csv_fpath
+
+
+def find_optimal_concurrency(lt_fpath_csv):
+  data = csv_utils.read_in_data(lt_fpath_csv)
+  max_throughput_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
+  return last_adjustments(max_throughput_concurrency)
 
 
 def main():
@@ -94,15 +96,18 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument("ini_file")
   parser.add_argument("lt_ini_file")
+  import constants
+  parser.add_argument("--log_dir", type=str, default=constants.SCRATCH_DIR)
   args = parser.parse_args()
 
   config = config_io.read_config_from_file(args.ini_file)
   lt_config = config_io.read_config_from_file(args.lt_ini_file)
 
   unique_suffix = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-  import constants
-  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
-  latency_throughput(config, lt_config, log_dir)
+  log_dir = os.path.join(args.log_dir, "lt_{}".format(unique_suffix))
+  if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+  run(config, lt_config, log_dir)
 
 
 if __name__ == "__main__":
