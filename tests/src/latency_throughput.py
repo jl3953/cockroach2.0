@@ -45,6 +45,7 @@ def run(config, lt_config, log_dir):
   # honing in on increasingly smaller ranges
   data = []
   while step_size > 0:
+    print("start", type(start), "end", type(end), "step_size", type(step_size))
     for concurrency in range(start, end + step_size, step_size):
       # run trial for this concurrency
       config["concurrency"] = concurrency
