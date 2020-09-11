@@ -12,6 +12,8 @@ class ConfigObject:
 
   def __init__(self):
 
+    ##### JENN, WARNING: IF YOU ADD A KEY HERE, ADD IT TO THE SQLITE TABLE TOO ####
+
     # default
     self.logs_dir = ["test"]
     self.store_dir = ["kv-skew"]
