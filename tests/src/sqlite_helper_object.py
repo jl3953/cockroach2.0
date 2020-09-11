@@ -28,8 +28,8 @@ class SQLiteHelperObject:
     column_names = SQLiteHelperObject.sanitize_column_names(header + list(kwargs.keys()))
     data_rows = [data_row + list(kwargs.values()) for data_row in data]
     print(column_names, len(column_names))
+    print(data_rows[0], len(data_rows[0]))
     question_marks = ", ".join(["?"] * len(column_names))
-    print(question_marks, len(question_marks))
     self.create_table_if_not_exists(table_name, column_names)
 
     # insert the rows
@@ -66,7 +66,8 @@ def main():
   db = SQLiteHelperObject(args.db_file)
   db.connect()
 
-  db.insert_csv_data_into_sqlite_table(args.table_name, args.csv)
+  db.insert_csv_data_into_sqlite_table(args.table_name, args.csv,
+                                       {"logs_dir": args.logs_dir})
 
 
 if __name__ == "__main__":
