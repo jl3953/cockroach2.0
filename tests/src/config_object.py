@@ -6,9 +6,6 @@ import config_io
 import constants
 import node
 
-TEST_PATH = os.path.join(constants.COCKROACHDB_DIR, "tests")
-TEST_CONFIG_PATH = os.path.join(TEST_PATH, "config")
-
 
 class ConfigObject:
   """Represents different combinations of configuration parameters."""
@@ -28,7 +25,7 @@ class ConfigObject:
 
     # self.workload_nodes = [] # to be populated
     # self.warm_nodes = [] # to be populated
-    # self.hot_node = []
+    # self.hot_node = [] # TODO implement passing in of hotnode to config object
     self.hot_key_threshold = [-1]
     self.should_create_partition = [False]
     self.disable_cores = [2, 4, 6]
@@ -75,12 +72,15 @@ class ConfigObject:
 
   def generate_all_config_files(self):
     """Generates all configuration files with different combinations of parameters.
-    :return: None
+    :return:
     """
+    ini_fpaths = []
     config_combos = self.generate_config_combinations()
     for config_dict in config_combos:
-      ini_filename = ConfigObject.generate_ini_filename(suffix=config_dict["logs_dir"])
-      _ = config_io.write_config_to_file(config_dict, ini_filename)
+      ini_fpath = ConfigObject.generate_ini_filename(suffix=config_dict["logs_dir"])
+      ini_fpaths.append(config_io.write_config_to_file(config_dict, ini_fpath))
+
+    return ini_fpaths
 
   @staticmethod
   def generate_ini_filename(suffix=None, custom_unique_prefix=None):
@@ -95,7 +95,7 @@ class ConfigObject:
     if custom_unique_prefix:
       unique_prefix = custom_unique_prefix
     ini = unique_prefix + "_" + suffix + ".ini"
-    return os.path.join(TEST_CONFIG_PATH, ini)
+    return os.path.join(constants.TEST_CONFIG_PATH, ini)
 
   @staticmethod
   def enumerate_workload_nodes(driver_node_ip_enum, num_workload_nodes):

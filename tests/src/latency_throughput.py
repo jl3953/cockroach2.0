@@ -3,9 +3,14 @@ import operator
 import os
 
 import config_io
+import constants
 import csv_utils
 import gather
+import plot_utils
 import run_single_data_point
+
+
+LT_GNUPLOT_EXE = os.path.join(constants.TEST_SRC_PATH, "lt.gp")
 
 
 def last_adjustments(max_throughput_concurrency):
@@ -26,22 +31,24 @@ def insert_csv_data(data, csv_fpath):
 
 
 def latency_throughput(config, lt_config, log_dir):
-  # read lt config file
-  start, end = lt_config["concurrency"]
-  step_size = lt_config["step_size"]
 
   # create latency throughput dir, if not running recovery
   lt_dir = os.path.join(log_dir, "latency_throughput")
   lt_logs_dir = os.path.join(lt_dir, "logs")
+  checkpoint_csv_fpath = os.path.join(lt_dir, "lt.csv")
   if not os.path.exists(lt_logs_dir):
     # not running recovery
     os.makedirs(lt_logs_dir)
+
+  # read lt config file
+  start, end = lt_config["concurrency"]
+  step_size = lt_config["step_size"]
 
   # honing in on increasingly smaller ranges
   max_throughput_concurrency = -1  # placeholder
   data = []
   while step_size > 0:
-    for concurrency in range(start, end, step_size):
+    for concurrency in range(start, end + step_size, step_size):
       # run trial for this concurrency
       config["concurrency"] = concurrency
 
@@ -67,9 +74,16 @@ def latency_throughput(config, lt_config, log_dir):
     end = concurrency + step_size
     step_size = int(step_size / 2)
 
-    # checkpoint, and also write out csv values every round of honing in
-    checkpoint = os.path.join(lt_dir, "checkpoint.csv")
-    insert_csv_data(data, checkpoint)
+    # checkpoint_csv_fpath, and also write out csv values every round of honing in
+    insert_csv_data(data, checkpoint_csv_fpath)
+
+  # TODO sqlite
+
+  # plot the latency throughput graphs
+  plot_utils.gnuplot(LT_GNUPLOT_EXE, checkpoint_csv_fpath,
+                     os.path.join(lt_dir, "p50_lt.png"),
+                     os.path.join(lt_dir, "p95_lt.png"),
+                     os.path.join(lt_dir, "p99_lt.png"))
 
   max_throughput_concurrency = last_adjustments(max_throughput_concurrency)
   return max_throughput_concurrency, data

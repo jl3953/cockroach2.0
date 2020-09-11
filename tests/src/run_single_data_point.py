@@ -88,10 +88,12 @@ def set_cluster_settings(nodes):
 
 
 def setup_hotnode(node):
+  # TODO implement setup_hotnode
   print("JENN DID YOU SET UP THE HOT NODE ON {} YET???".format(node))
 
 
 def kill_hotnode(node):
+  # TODO implement kill_hotnode
   print("JENN GO KILL THE HOT NODE ON {}!!!".format(node))
 
 
@@ -198,7 +200,7 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
       individual_node_cmd = "sudo ssh {0} '{1}'".format(node["ip"], trial_cmd)
       print(individual_node_cmd)
       # logging output for each node
-      log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
+      log_fpath = os.path.join(log_dir, "logs", "bench_{}.txt".format(node["ip"]))
       bench_log_files.append(log_fpath)
       with open(log_fpath, "w") as f:
         trial_processes.append(subprocess.Popen(shlex.split(individual_node_cmd), stdout=f))
@@ -269,7 +271,7 @@ def main():
   config["concurrency"] = 16
   import datetime
   unique_suffix = datetime.datetime.now().strftime("%f")
-  log_dir = os.path.join(constants.COCKROACHDB_DIR, "tests", "help_{}".format(unique_suffix))
+  log_dir = os.path.join(constants.TEST_PATH, "help_{}".format(unique_suffix))
   os.makedirs(log_dir)
 
   run(config, log_dir)
