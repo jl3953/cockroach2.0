@@ -27,6 +27,7 @@ class SQLiteHelperObject:
     # create table if not exists yet
     column_names = SQLiteHelperObject.sanitize_column_names(header + list(kwargs.keys()))
     data_rows = [data_row + list(kwargs.values()) for data_row in data]
+    print(column_names)
     question_marks = ", ".join(["?"] * len(column_names))
     print(question_marks)
     self.create_table_if_not_exists(table_name, column_names)
