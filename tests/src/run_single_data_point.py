@@ -186,8 +186,6 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     for wp in warmup_processes:
       wp.wait()
 
-    return None
-
   if mode == RunMode.TRIAL_RUN_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
     bench_log_files = []
     # run trial
