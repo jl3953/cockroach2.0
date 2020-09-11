@@ -61,8 +61,8 @@ def run(config, lt_config, log_dir):
       # gather data from this run
       datum = {"concurrency": concurrency}
       more_data = csv_utils.read_in_data(results_fpath_csv)
-      datum.update(more_data)
-      data.append(*datum)
+      datum.update(*more_data)
+      data.append(datum)
 
     # find max throughput and hone in on it
     max_throughput_concurrency = max(data, key=operator.itemgetter("ops/sec(cum)"))["concurrency"]
