@@ -95,7 +95,7 @@ def main():
           os.makedirs(logs_dir)
 
         # copy over config into directory
-        system_utils.call("cp {0} {1}".format(cfg["config_fpath"], logs_dir))
+        system_utils.call("cp {0} {1}".format(cfg["config_fpath"], logs_dir, ""))
 
         # generate latency throughput trials
         lt_fpath_csv = latency_throughput.run(cfg, lt_cfg, logs_dir)
