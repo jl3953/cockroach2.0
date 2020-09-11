@@ -27,13 +27,11 @@ class SQLiteHelperObject:
     # create table if not exists yet
     column_names = SQLiteHelperObject.sanitize_column_names(header + list(kwargs.keys()))
     data_rows = [tuple(data_row + list(kwargs.values())) for data_row in data]
-    print(column_names, len(column_names))
-    print(data_rows[0], len(data_rows[0]))
     question_marks = ",".join(["?"] * len(column_names))
     self.create_table_if_not_exists(table_name, column_names)
 
     # insert the rows
-    insert_cmd = "INSERT INTO {0} ({1})".format(table_name, question_marks)
+    insert_cmd = "INSERT INTO {0} VALUES ({1})".format(table_name, question_marks)
     print(insert_cmd)
     self.c.executemany(insert_cmd, data_rows)
 
