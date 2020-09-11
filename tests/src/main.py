@@ -29,7 +29,7 @@ def generate_dir_name(config_fpath):
   config_name = config_file.split('.')[0]
   dir_name = os.path.join(DB_DIR, config_name)
 
-  return config_name
+  return dir_name
 
 
 def main():
