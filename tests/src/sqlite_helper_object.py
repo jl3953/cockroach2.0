@@ -26,7 +26,7 @@ class SQLiteHelperObject:
 
     # create table if not exists yet
     column_names = SQLiteHelperObject.sanitize_column_names(header + list(kwargs.keys()))
-    data_rows = [data_row + list(kwargs.values()) for data_row in data]
+    data_rows = [tuple(data_row + list(kwargs.values())) for data_row in data]
     print(column_names, len(column_names))
     print(data_rows[0], len(data_rows[0]))
     question_marks = ", ".join(["?"] * len(column_names))
