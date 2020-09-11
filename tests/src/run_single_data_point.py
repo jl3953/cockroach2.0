@@ -73,7 +73,10 @@ def start_cluster(nodes):
 
   processes = []
   for node in nodes[1:]:
-    processes.append(start_cockroach_node(node, join=first["ip"]))
+    start_cockroach_node(node, join=first["ip"]).wait()
+    set_cluster_settings_on_single_node(first)
+
+    # processes.append(start_cockroach_node(node, join=first["ip"]))
 
   for process in processes:
     process.wait()
