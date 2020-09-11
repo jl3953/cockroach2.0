@@ -172,7 +172,7 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     a_server_node = server_nodes[0]
     settings_cmd = 'echo "alter range default configure zone using num_replicas = 1;" | ' \
                    '{0} sql --insecure --database=kv --url="postgresql://root@{1}?sslmode=disable"' \
-                    .format(EXE, a_server_node["ip"])
+      .format(EXE, a_server_node["ip"])
     system_utils.call_remote(driver_node["ip"], settings_cmd)
 
     # run warmup
@@ -186,7 +186,10 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
     for wp in warmup_processes:
       wp.wait()
 
+    return None
+
   if mode == RunMode.TRIAL_RUN_ONLY or mode == RunMode.WARMUP_AND_TRIAL_RUN:
+    bench_log_files = []
     # run trial
     trial_cmd = cmd + " --duration={}s".format(duration)
     trial_processes = []
@@ -195,11 +198,14 @@ def run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_d
       print(individual_node_cmd)
       # logging output for each node
       log_fpath = os.path.join(log_dir, "bench_{}.txt".format(node["ip"]))
+      bench_log_files.append(log_fpath)
       with open(log_fpath, "w") as f:
         trial_processes.append(subprocess.Popen(shlex.split(individual_node_cmd), stdout=f))
 
     for tp in trial_processes:
       tp.wait()
+
+    return bench_log_files
 
 
 def run(config, log_dir):
@@ -229,6 +235,7 @@ def run(config, log_dir):
   set_cluster_settings(server_nodes)
 
   # build and start client nodes
+  bench_log_files = []
   if config["name"] == "kv":
     keyspace = config["keyspace"]
     warm_up_duration = config["warm_up_duration"]
@@ -237,8 +244,8 @@ def run(config, log_dir):
     n_keys_per_statement = config["n_keys_per_statement"]
     skew = config["skews"]
     concurrency = config["concurrency"]
-    run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_duration, duration,
-                    read_percent, n_keys_per_statement, skew, log_dir)
+    bench_log_files = run_kv_workload(client_nodes, server_nodes, concurrency, keyspace, warm_up_duration, duration,
+                                      read_percent, n_keys_per_statement, skew, log_dir)
 
   # re-enable cores
   cores_to_enable = cores_to_disable
@@ -246,6 +253,8 @@ def run(config, log_dir):
     enable_cores(server_nodes, cores_to_enable)
     if hot_node:
       enable_cores([hot_node], cores_to_enable)
+
+  return bench_log_files
 
 
 def main():
