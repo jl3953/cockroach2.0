@@ -1,5 +1,4 @@
 import collections
-import os
 import re
 
 
@@ -11,9 +10,9 @@ def extract_data(last_eight_lines):
     suffix = ""
     fields = data_line.strip().split()
     if "read" in fields[-1]:
-      suffix = "_r"
+      suffix = "-r"
     elif "write" in fields[-1]:
-      suffix = "_w"
+      suffix = "-w"
 
     header = [w + suffix for w in re.split('_+', header_line.strip().strip('_'))]
     data = dict(zip(header, fields))

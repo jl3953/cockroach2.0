@@ -25,8 +25,7 @@ class SQLiteHelperObject:
     header, data = csv_utils.read_in_data_as_tuples(csv_fpath)
 
     # create table if not exists yet
-    column_names = header
-    column_names += list(kwargs.keys())
+    column_names = SQLiteHelperObject.sanitize_column_names(header + list(kwargs.keys()))
     print(column_names)
     data_rows = [data_row + list(kwargs.values()) for data_row in data]
     question_marks = ", ".join(["?"] * len(column_names))
@@ -37,6 +36,18 @@ class SQLiteHelperObject:
 
   def close(self):
     self.conn.close()
+
+  @staticmethod
+  def sanitize_column_names(column_names):
+    def sanitize(col_name):
+      col_name = col_name.replace("-", "_")
+      col_name = col_name.replace("/", "_per_")
+      col_name = col_name.replace("(", "_")
+      col_name = col_name.replace(")", "")
+
+      return col_name
+
+    return [sanitize(cn) for cn in column_names]
 
 
 def main():
