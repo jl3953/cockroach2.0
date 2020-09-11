@@ -43,7 +43,6 @@ def run(config, lt_config, log_dir):
   step_size = lt_config["step_size"]
 
   # honing in on increasingly smaller ranges
-  max_throughput_concurrency = -1  # placeholder
   data = []
   while step_size > 0:
     for concurrency in range(start, end + step_size, step_size):
@@ -73,8 +72,6 @@ def run(config, lt_config, log_dir):
 
     # checkpoint_csv_fpath, and also write out csv values every round of honing in
     insert_csv_data(data, checkpoint_csv_fpath)
-
-  # TODO sqlite
 
   # plot the latency throughput graphs
   plot_utils.gnuplot(LT_GNUPLOT_EXE, checkpoint_csv_fpath,

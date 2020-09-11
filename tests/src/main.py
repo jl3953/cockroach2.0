@@ -13,7 +13,16 @@ config_object_list = [
 ]
 
 
+def generate_dir_name(config_fpath):
+  config_file = os.path.basename(config_fpath)
+  config_name = config_file.split('.')[0]
+
+  return config_name
+
+
 def main():
+  # TODO create the database
+
   for cfg_obj, lt_fpath in config_object_list:
 
     # generate config objects
@@ -26,7 +35,7 @@ def main():
     for cfg in cfgs:
       try:
         # make directory in which trial will be run
-        logs_dir = generate_configs.generate_dir_name(cfg["config_fpath"])
+        logs_dir = generate_dir_name(cfg["config_fpath"])
         os.makedirs(logs_dir)
 
         # copy over config into directory
@@ -40,7 +49,6 @@ def main():
         results_fpath_csv = run_single_data_point.run(cfg, logs_dir)
 
         # TODO insert into sqlite database
-
 
       except BaseException as e:
         print("Config {0} failed to run, continue with other configs. e:[{1}]"

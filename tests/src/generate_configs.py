@@ -21,8 +21,4 @@ def generate_configs_from_files(config_file_list):
   return configs
 
 
-def generate_dir_name(config_fpath):
-  config_file = os.path(config_fpath)
-  config_name = config_file.split('.')[0]
 
-  return config_name
