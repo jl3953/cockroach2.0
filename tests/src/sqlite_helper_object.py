@@ -33,7 +33,9 @@ class SQLiteHelperObject:
     self.create_table_if_not_exists(table_name, column_names)
 
     # insert the rows
-    self.c.executemany("INSERT INTO {0} ({1})".format(table_name, question_marks), data_rows)
+    insert_cmd = "INSERT INTO {0} ({1})".format(table_name, question_marks)
+    print(insert_cmd)
+    self.c.executemany(insert_cmd, data_rows)
 
   def close(self):
     self.conn.close()
