@@ -39,8 +39,8 @@ def run(config, lt_config, log_dir):
     os.makedirs(lt_logs_dir)
 
   # read lt config file
-  start, end = int(lt_config["concurrency"])
-  step_size = int(lt_config["step_size"])
+  start, end = lt_config["concurrency"]
+  step_size = lt_config["step_size"]
 
   # honing in on increasingly smaller ranges
   data = []
