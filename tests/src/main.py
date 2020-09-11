@@ -27,6 +27,7 @@ DB_DIR = os.path.join(constants.SCRATCH_DIR, "db_{0}".format(unique_suffix))
 def generate_dir_name(config_fpath):
   config_file = os.path.basename(config_fpath)
   config_name = config_file.split('.')[0]
+  dir_name = os.path.join(DB_DIR, config_name)
 
   return config_name
 
