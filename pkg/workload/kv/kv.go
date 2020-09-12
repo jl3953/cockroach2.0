@@ -381,12 +381,12 @@ func correctTxnParams(batchSize int, generateKey generateKeyFunc, greatestHotKey
 	sort.Sort(byInt(argsInt))
 
 	//jenndebug hot replacing hot keys
-	for i := 0; i < len(argsInt); i++ {
-		if argsInt[i] <= greatestHotKey {
-			argsInt[i] = argsInt[0]
-		}
-	}
-	sort.Sort(byInt(argsInt))
+	//for i := 0; i < len(argsInt); i++ {
+	//	if argsInt[i] <= greatestHotKey {
+	//		argsInt[i] = argsInt[0]
+	//	}
+	//}
+	//sort.Sort(byInt(argsInt))
 
 	return argsInt
 }
