@@ -14,8 +14,8 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"google.golang.org/grpc"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	/* "google.golang.org/grpc"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"*/
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
@@ -645,33 +645,34 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 
 func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte) ([][]byte, hlc.Timestamp) {
 
-	address := "node-7:50051"
-	defaultName := "world"
+	/*
+			address := "node-7:50051"
+			defaultName := "world"
 
-	// Set up a connection to the server
-	conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
-	if err != nil {
-		log.Fatalf(context.Background(), "jenndebugrpc did not connect: %v", err)
-	}
-	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
+			// Set up a connection to the server
+			conn, err := grpc.Dial(address, grpc.WithInsecure(), grpc.WithBlock())
+			if err != nil {
+				log.Fatalf(context.Background(), "jenndebugrpc did not connect: %v", err)
+			}
+			defer conn.Close()
+			c := pb.NewGreeterClient(conn)
 
-	// Contact the server and print out its response.
-	name := defaultName
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	_, err = c.SayHello(ctx, &pb.HelloRequest{Name: name})
-	i := 0
-	for err != nil && i < 3 {
-		i++
-		log.Warningf(context.Background(), "jenndebugrpc could not greet, retries:[%d], err:[%v]", i, err)
+			// Contact the server and print out its response.
+		name := defaultName
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 		_, err = c.SayHello(ctx, &pb.HelloRequest{Name: name})
-	}
+			i := 0
+			for err != nil && i < 3 {
+				i++
+				log.Warningf(context.Background(), "jenndebugrpc could not greet, retries:[%d], err:[%v]", i, err)
+				_, err = c.SayHello(ctx, &pb.HelloRequest{Name: name})
+			}
 
-	if err != nil {
-		log.Warningf(context.Background(), "jenndebugrpc could not greet "+
-			"exceeded acceptable retries:[%+d], err:[%+v]", i, err)
-	}
+			if err != nil {
+				log.Warningf(context.Background(), "jenndebugrpc could not greet "+
+					"exceeded acceptable retries:[%+d], err:[%+v]", i, err)
+			}*/
 
 	// JENNDEBUG TODO filling in fake deadline
 	deadline := new(hlc.Timestamp)
@@ -920,6 +921,7 @@ func (e *AutoCommitError) Error() string {
 // used.
 func (txn *Txn) exec(ctx context.Context, fn func(context.Context, *Txn) error) (err error) {
 	// Run fn in a retry loop until we encounter a success or
+
 	// error condition this loop isn't capable of handling.
 	for {
 		if err := ctx.Err(); err != nil {
