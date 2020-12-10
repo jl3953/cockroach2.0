@@ -248,7 +248,7 @@ func (ex *connExecutor) populatePrepared(
 
 func isHotkey(key []byte) bool {
 
-	// We're just...hardcoding some hotkeys here
+	// jenndebug We're just...hardcoding some hotkeys here
 	hotkeys := make([]uint64, 0)
 	hotkeys = append(hotkeys, 0)
 
@@ -379,14 +379,14 @@ func (ex *connExecutor) execBind(
 			ex.state.mu.txn.AddReadHotkeys(hotkeys)
 		}
 
-		// sending RPC query
-		if ex.state.mu.txn.HasWriteHotkeys() || ex.state.mu.txn.HasReadHotkeys() {
-			hotkeyReadResults, deadline := ex.state.mu.txn.ContactHotshard(
-				ex.state.mu.txn.GetAndClearWriteHotkeys(), ex.state.mu.txn.GetAndClearReadHotkeys())
-
-			ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
-			ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
-		}
+		//// sending RPC query
+		//if ex.state.mu.txn.HasWriteHotkeys() || ex.state.mu.txn.HasReadHotkeys() {
+		//	hotkeyReadResults, deadline := ex.state.mu.txn.ContactHotshard(
+		//		ex.state.mu.txn.GetAndClearWriteHotkeys(), ex.state.mu.txn.GetAndClearReadHotkeys())
+		//
+		//	ex.state.mu.txn.AddResultReadHotkeys(hotkeyReadResults)
+		//	ex.state.mu.txn.SetFixedTimestamp(ctx, deadline)
+		//}
 	}
 
 	numQArgs := uint16(len(ps.InferredTypes))
