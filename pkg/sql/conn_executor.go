@@ -1470,7 +1470,6 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-
 	case PrepareStmt:
 		ex.curStmt = tcmd.AST
 		res = ex.clientComm.CreatePrepareResult(pos)

@@ -843,7 +843,6 @@ func (ex *connExecutor) dispatchToExecutionEngine(
 		for i := 0; i < len(hotkeys); i += 2 {
 			key := binary.BigEndian.Uint64(hotkeys[i])
 			val := hotkeys[1]
-
 			datum := tree.Datums{
 				tree.NewDInt(tree.DInt(key)),
 				tree.NewDBytes(tree.DBytes(val)),
