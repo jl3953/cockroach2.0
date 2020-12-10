@@ -170,12 +170,10 @@ def copy_and_create_metadata(location, config_file):
     git_submodule_hash = bash_imitation.git_submodule_commit_hash(submodule)
     f.write("\nsubmodule_commit_hash: " + git_submodule_hash)
 
-
-def call_latency_throughput(location, baseline_file, lt_file, params_file, csv_file, skew):
+def call_latency_throughput(baseline_file, lt_file, params_file, csv_file, skew, use_manual_sampling):
   """ Calls the latency throughput script.
 
 	Args:
-		location (str): absolute path of location directory.
 		baseline_file (str): original params config file, abs path
 		lt_file (str): latency throughput params config, abs path
 		params_file (str): abs path of param output file
@@ -189,6 +187,8 @@ def call_latency_throughput(location, baseline_file, lt_file, params_file, csv_f
   # call lt script
   cmd = "{0} {1} {2} {3} {4} {5}".format(
     LT_EXECUTABLE, baseline_file, lt_file, params_file, csv_file, skew)
+  if use_manual_sampling:
+    cmd += " --use_manual_sampling"
   lib.call(cmd, "lt_driver script failed")
 
 
@@ -364,11 +364,13 @@ def main():
   parser.add_argument("--start_stage", type=Stage, default=Stage.CREATE_NEW_DIRS,
                       choices=[stage for stage in Stage],
                       help="which stage to start running at. Useful for testing.")
-  parser.add_argument("--end_stage", type=Stage, default=Stage.END,
+  parser.add_argument("--end_stage", type=Stage, default=Stage.LATENCY_THROUGHPUT,
                       choices=[stage for stage in Stage],
                       help="which stage to stop running after. Useful for testing.")
   parser.add_argument("--existing_directory",
                       help="existing directory to use. Useful for testing.")
+  parser.add_argument("--use_manual_sampling", action='store_true',
+                      help="requires babysitting the sampling process.")
 
   args = parser.parse_args()
   args.config = os.path.join(FPATH, args.config)  # replace with abs path
@@ -421,15 +423,15 @@ def main():
         lt_csv = os.path.join(csv_dir, "lt_trial_{0}_{1}.csv".format(trial, s))
         lt_logs = os.path.join(raw_out_dir, "lt_logs_trial_{0}_{1}".format(trial, s))
 
-        call_latency_throughput(overall_dir, args.config, args.lt_config,
-                                param_output, lt_csv, s)
+        call_latency_throughput(args.config, args.lt_config,
+                                param_output, lt_csv, s, args.use_manual_sampling)
 
         # checkpointing
         concurrency = exp_lib.read_concurrency(param_output)
         exp_lib.write_skew_concurrency_pair(s, concurrency, checkpoint)
 
         move_logs(args.config, lt_logs)
-        bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, trial, s)
+        bash_imitation.gnuplot(LT_GNUPLOT, lt_csv, graph_dir, str(trial), s)
 
       # param_outputs.append(skews_for_trial)
 
@@ -454,7 +456,7 @@ def main():
       # assume that the abs path is just the joining of the dir and filename.
       driver(args.config, override_file, csv_dir, driver_file)
       move_logs(args.config, driver_logs)
-      bash_imitation.gnuplot(DRIVER_GNUPLOT, driver_csv, graph_dir, trial)
+      bash_imitation.gnuplot(DRIVER_GNUPLOT, driver_csv, graph_dir, str(trial))
 
     calculate_and_plot_box_and_whiskers(csvs, csv_dir, graph_dir)
 
