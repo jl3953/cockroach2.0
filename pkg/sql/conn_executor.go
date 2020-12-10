@@ -1421,6 +1421,10 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 
 					res.(BufferResult).BufferRowRaw(ctx, data, formatCodes, conv, dataTypes)
 				}
+
+				res = ex.clientComm.(ClientCommRaw).CreateNewMiscResult(pos)
+				// ex.handleAutoCommit(ctx, nil) // jenndebug this'll come back to haunt my ass
+				// res.Close(ctx, stateToTxnStatusIndicator(ex.machine.CurState()))
 			}
 			// jenndebug IDK why this line being here prevents deadlocks, but it does
 			res = ex.clientComm.(ClientCommRaw).CreateNewMiscResult(pos)
@@ -1472,6 +1476,7 @@ func (ex *connExecutor) execCmd(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+
 	case PrepareStmt:
 		log.Warningf(ctx, "jenndebugtype PrepareStmt")
 		ex.curStmt = tcmd.AST
