@@ -248,7 +248,7 @@ func (ex *connExecutor) populatePrepared(
 
 func isHotkey(key []byte) bool {
 
-	// We're just...hardcoding some hotkeys here
+	// jenndebug We're just...hardcoding some hotkeys here
 	hotkeys := make([]uint64, 0)
 	hotkeys = append(hotkeys, 0)
 
