@@ -208,6 +208,8 @@ def move_logs(baseline_file, dest):
   src_logs = exp_lib.find_log_dir(FPATH, baseline_file)
   bash_imitation.move_logs(src_logs, dest)
 
+def construct_checkpoint_file(trial):
+  return "checkpoint_trial_{0}.csv".format(trial)
 
 def construct_checkpoint_file(trial):
   return "checkpoint_trial_{0}.csv".format(trial)

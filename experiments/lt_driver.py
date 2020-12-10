@@ -13,7 +13,6 @@ FPATH = os.path.dirname(os.path.realpath(__file__))
 LT_GNUPLOT = os.path.join(FPATH, "lt.gp")
 
 
-
 def parse_config_file(baseline_file, lt_file):
   exp, skews = exp_lib.create_experiment(FPATH, baseline_file)
   variation_config = exp_lib.read_variation(lt_file)
