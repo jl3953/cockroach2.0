@@ -14,6 +14,9 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"google.golang.org/grpc"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+
 	//"google.golang.org/grpc"
 	//pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"time"
@@ -646,7 +649,7 @@ func (txn *Txn) Run(ctx context.Context, b *Batch) error {
 func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte,
 	provisionalCommitTimestamp hlc.Timestamp) ([][]byte, bool) {
 
-	/*address := "node-4:50051"
+	address := "localhost:50051"
 	defaultName := "world"
 
 	// Set up a connection to the server
@@ -672,7 +675,7 @@ func (txn *Txn) ContactHotshard(writeHotkeys [][]byte, readHotkeys [][]byte,
 	if err != nil {
 		log.Warningf(context.Background(), "jenndebugrpc could not greet "+
 			"exceeded acceptable retries:[%+d], err:[%+v]", i, err)
-	}*/
+	}
 
 	readResults := make([][]byte, 0)
 
@@ -691,7 +694,9 @@ func (txn *Txn) commit(ctx context.Context) error {
 	var ba roachpb.BatchRequest
 
 	if txn.HasWriteHotkeys() || txn.HasReadHotkeys() {
-		if _, succeeded := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(), txn.GetAndClearReadHotkeys(), txn.ProvisionalCommitTimestamp()); !succeeded {
+		if _, succeeded := txn.ContactHotshard(txn.GetAndClearWriteHotkeys(),
+			txn.GetAndClearReadHotkeys(),
+			txn.ProvisionalCommitTimestamp()); !succeeded {
 			// jenndebug TODO how do I abort a txn?
 			log.Fatal(ctx, "jenndebug the hotshard could not commit txn")
 		}
