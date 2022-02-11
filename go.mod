@@ -49,7 +49,7 @@ require (
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
 	github.com/dave/dst v0.24.0
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
-	github.com/docker/distribution v2.7.0+incompatible
+	github.com/docker/distribution v2.8.0+incompatible
 	github.com/docker/docker v17.12.0-ce-rc1.0.20190115172544-0dc531243dd3+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
